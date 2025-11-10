@@ -1,9 +1,72 @@
-import React from 'react'
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate
+} from "react-router-dom";
 
-function App() {
+import Login from "./pages/Auth/Login";
+import AdminLogin from "./pages/Auth/AdminLogin";
+import Signup from "./pages/Auth/Signup";
+
+import AdmHome from "./pages/AdminDashboard/AdmHome";
+import StdHome from "./pages/StudentDashboard/StdHome";
+
+import AdmGrades from "./pages/AdminDashboard/AdmGrades";
+import AdmSubject from "./pages/AdminDashboard/AdmSubject";
+import AdmQuiz from "./pages/AdminDashboard/AdmQuiz";
+
+import StdProgress from "./pages/StudentDashboard/StdProgress";
+import StdGrade from "./pages/StudentDashboard/StdGrade";
+import StdSubject from "./pages/StudentDashboard/StdSubject";
+import StdQuiz from "./pages/StudentDashboard/StdQuiz";
+
+// Root Component - decides initial redirect based on role
+const Root = () => {
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role"); // 'admin' or 'student'
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (role === "admin") {
+    return <Navigate to="/admindashboard" replace />;
+  }
+
+  return <Navigate to="/studentdashboard" replace />;
+};
+
+const App = () => {
   return (
-    <div className= ' card text-3xl'>Quiz App</div>
-  )
-}
+    <div>
+      <Router>
+        <Routes>
+          {/* Root Route - redirects based on login & role */}
+          <Route path="/" element={<Root />} />
 
-export default App
+          {/* Auth Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/adminlogin" element={<AdminLogin />} />
+
+          {/* Admin Dashboard Routes */}
+          <Route path="/admindashboard" element={<AdmHome />} />
+          <Route path="admingrades" element={<AdmGrades />} />
+          <Route path="adminsubjects" element={<AdmSubject />} />
+          <Route path="adminquiz" element={<AdmQuiz />} />
+
+          {/* Student Dashboard Routes */}
+          <Route path="/studentdashboard" element={<StdHome />} />
+          <Route path="studentprogress" element={<StdProgress />} />
+          <Route path="studentgrades" element={<StdGrade />} />
+          <Route path="studentsubject" element={<StdSubject />} />
+          <Route path="studentquiz" element={<StdQuiz />} />
+        </Routes>
+      </Router>
+    </div>
+  );
+};
+
+export default App;
