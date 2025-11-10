@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 
 import Login from "./pages/Auth/Login";
-import AdminLogin from "./pages/Auth/AdminLogin";
+
 import Signup from "./pages/Auth/Signup";
 
 import AdmHome from "./pages/AdminDashboard/AdmHome";
@@ -49,7 +49,7 @@ const App = () => {
           {/* Auth Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/adminlogin" element={<AdminLogin />} />
+          
 
           {/* Admin Dashboard Routes */}
           <Route path="/admindashboard" element={<AdmHome />} />
