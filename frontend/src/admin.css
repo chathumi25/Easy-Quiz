@@ -1,0 +1,225 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+/* =============================
+   GLOBAL ADMIN THEME STYLES
+   ============================= */
+
+/* Base font and smooth scroll */
+body {
+  font-family: "Inter", sans-serif;
+  scroll-behavior: smooth;
+  color: #1e1e2f;
+  background: linear-gradient(135deg, #e2e8f0, #f0f4ff, #f6eaff);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Consistent gradient for background wrappers */
+.app-background {
+  background: linear-gradient(135deg, #e2e8f0 0%, #f0f4ff 50%, #f6eaff 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: #1e1e2f;
+  transition: background 0.3s ease;
+}
+
+/* ==========================================
+   ADMIN CONTAINER & CARD ENHANCEMENTS
+   ========================================== */
+
+/* General admin cards */
+.admin-card {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 1rem;
+  box-shadow: 0 8px 20px rgba(100, 100, 150, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.08);
+  transition: all 0.3s ease;
+}
+
+/* Card hover interaction */
+.admin-card:hover {
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15);
+  transform: translateY(-4px);
+}
+
+/* Subject cards */
+.subject-card {
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  border-radius: 1rem;
+  box-shadow: 0 4px 10px rgba(100, 100, 150, 0.05);
+}
+
+.subject-card:hover {
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.12);
+  transform: translateY(-3px);
+}
+
+/* Grade cards */
+.grade-card {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 1rem;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  transition: all 0.3s ease;
+}
+.grade-card:hover {
+  background: rgba(240, 240, 255, 0.95);
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: scale(1.02);
+}
+
+/* ==========================================
+   INPUTS, BUTTONS, FORMS
+   ========================================== */
+
+/* Inputs */
+input,
+select,
+textarea {
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.85);
+  transition: all 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+  background: white;
+}
+
+/* Buttons (general admin) */
+button {
+  transition: all 0.25s ease;
+  font-weight: 500;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+/* Gradient buttons */
+.btn-gradient {
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  color: white;
+  border-radius: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  transition: all 0.3s ease;
+}
+.btn-gradient:hover {
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  box-shadow: 0 6px 15px rgba(99, 102, 241, 0.3);
+}
+
+/* Delete button */
+.btn-danger {
+  background: #dc2626;
+  color: white;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+.btn-danger:hover {
+  background: #b91c1c;
+}
+
+/* ==========================================
+   ANIMATIONS & TRANSITIONS
+   ========================================== */
+
+/* Smooth fade-in */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out;
+}
+
+/* Expand-in effect for subject/unit additions */
+@keyframes fadeInExpand {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-fadeInExpand {
+  animation: fadeInExpand 0.3s ease-out;
+}
+
+/* ==========================================
+   UTILITIES
+   ========================================== */
+
+/* Subtle shadows for content cards */
+.shadow-soft {
+  box-shadow: 0 4px 14px rgba(100, 100, 150, 0.08);
+}
+
+/* Divider lines */
+.divider {
+  border-top: 1px solid rgba(99, 102, 241, 0.15);
+  margin: 1rem 0;
+}
+
+/* Unit box styling */
+.unit-box {
+  background: rgba(240, 240, 255, 0.6);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.8rem;
+  transition: all 0.3s ease;
+}
+.unit-box:hover {
+  background: rgba(240, 240, 255, 0.9);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* ==========================================
+   RESPONSIVE ENHANCEMENTS
+   ========================================== */
+
+@media (max-width: 768px) {
+  .admin-card,
+  .subject-card {
+    padding: 1rem;
+  }
+  input,
+  select,
+  button {
+    font-size: 0.9rem;
+  }
+}
+
+.btn-gradient {
+  background: linear-gradient(to right, #4f46e5, #7c3aed);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: 0.2s;
+}
+.btn-gradient:hover {
+  opacity: 0.9;
+  transform: scale(1.03);
+}
+.btn-danger {
+  background: #dc2626;
+  color: white;
+  border-radius: 0.375rem;
+}
