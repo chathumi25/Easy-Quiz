@@ -6,6 +6,7 @@ import {
   Navigate
 } from "react-router-dom";
 
+
 import Login from "./pages/Auth/Login";
 
 import Signup from "./pages/Auth/Signup";
@@ -16,11 +17,13 @@ import StdHome from "./pages/StudentDashboard/StdHome";
 import AdmGrades from "./pages/AdminDashboard/AdmGrades";
 import AdmSubject from "./pages/AdminDashboard/AdmSubject";
 import AdmQuiz from "./pages/AdminDashboard/AdmQuiz";
+import AdminProfile from "./pages/AdminDashboard/AdminProfile";
 
 import StdProgress from "./pages/StudentDashboard/StdProgress";
 import StdGrade from "./pages/StudentDashboard/StdGrade";
 import StdSubject from "./pages/StudentDashboard/StdSubject";
 import StdQuiz from "./pages/StudentDashboard/StdQuiz";
+import StudentProfile from "./pages/StudentDashboard/StudentProfile";
 
 // Root Component - decides initial redirect based on role
 const Root = () => {
@@ -56,6 +59,8 @@ const App = () => {
           <Route path="admingrades" element={<AdmGrades />} />
           <Route path="adminsubjects" element={<AdmSubject />} />
           <Route path="adminquiz" element={<AdmQuiz />} />
+          <Route path="/adminprofile" element={<AdminProfile />} />
+
 
           {/* Student Dashboard Routes */}
           <Route path="/studentdashboard" element={<StdHome />} />
@@ -63,6 +68,7 @@ const App = () => {
           <Route path="studentgrades" element={<StdGrade />} />
           <Route path="studentsubject" element={<StdSubject />} />
           <Route path="studentquiz" element={<StdQuiz />} />
+          <Route path="/studentprofile" element={<StudentProfile />} />
         </Routes>
       </Router>
     </div>

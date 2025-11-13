@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaPlus, FaTrash, FaBookOpen, FaLayerGroup } from "react-icons/fa";
-import AdminSidebar from "../../components/layouts/AdminSidebar";
 import AdminNavbar from "../../components/layouts/AdminNavbar";
 import "../../index.css";
 import "../../admin.css";
@@ -22,10 +21,8 @@ const createDefaultData = () =>
 const AdmSubject = () => {
   const navbarRef = useRef(null);
   const [navbarHeight, setNavbarHeight] = useState(85);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const [subjects, setSubjects] = useState(() => {
-    // initialize synchronously from localStorage to avoid timing issues
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
@@ -40,15 +37,12 @@ const AdmSubject = () => {
     return initial;
   });
 
-  const [selectedGrade, setSelectedGrade] = useState(() => {
-    // default to first grade so UI shows without extra clicks
-    return DEFAULT_GRADES[0] || "";
-  });
+  const [selectedGrade, setSelectedGrade] = useState(() => DEFAULT_GRADES[0] || "");
   const [selectedSubject, setSelectedSubject] = useState("");
   const [newSubject, setNewSubject] = useState("");
   const [newUnit, setNewUnit] = useState({ name: "", content: "" });
 
-  // keep localStorage in sync whenever subjects change
+  // keep localStorage in sync
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(subjects));
@@ -57,7 +51,7 @@ const AdmSubject = () => {
     }
   }, [subjects]);
 
-  // ensure navbar height is captured
+  // capture navbar height
   useEffect(() => {
     const updateHeight = () => {
       if (navbarRef.current) setNavbarHeight(navbarRef.current.offsetHeight);
@@ -67,20 +61,12 @@ const AdmSubject = () => {
     return () => window.removeEventListener("resize", updateHeight);
   }, []);
 
-  // responsive sidebar
-  useEffect(() => {
-    const handleResize = () => setIsSidebarOpen(window.innerWidth >= 1024);
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
   // derived helpers
   const currentGrade = subjects.find((g) => g.grade === selectedGrade) || null;
   const currentSubject =
     currentGrade?.subjects.find((s) => s.name === selectedSubject) || null;
 
-  // Add a subject to selected grade
+  // Add subject
   const addSubject = () => {
     if (!selectedGrade) return alert("Please select a grade first!");
     const name = (newSubject || "").trim();
@@ -89,7 +75,6 @@ const AdmSubject = () => {
     setSubjects((prev) =>
       prev.map((g) => {
         if (g.grade !== selectedGrade) return g;
-        // avoid duplicates (case-insensitive)
         if (g.subjects.some((s) => s.name.toLowerCase() === name.toLowerCase())) {
           alert("This subject already exists in this grade!");
           return g;
@@ -99,11 +84,10 @@ const AdmSubject = () => {
     );
 
     setNewSubject("");
-    // keep selection focused on the grade and set the newly added subject as selected
     setSelectedSubject(name);
   };
 
-  // Remove a subject from selected grade
+  // Remove subject
   const removeSubject = (subjectName) => {
     if (!window.confirm(`Delete ${subjectName}?`)) return;
     setSubjects((prev) =>
@@ -116,7 +100,7 @@ const AdmSubject = () => {
     if (selectedSubject === subjectName) setSelectedSubject("");
   };
 
-  // Add a unit to selected subject
+  // Add unit
   const addUnit = () => {
     if (!selectedGrade || !selectedSubject)
       return alert("Select a grade and subject before adding a unit!");
@@ -144,7 +128,7 @@ const AdmSubject = () => {
     setNewUnit({ name: "", content: "" });
   };
 
-  // Remove unit by id
+  // Remove unit
   const removeUnit = (unitId) => {
     setSubjects((prev) =>
       prev.map((g) =>
@@ -162,7 +146,6 @@ const AdmSubject = () => {
     );
   };
 
-  // ensure selectedGrade is always valid if subjects change externally
   useEffect(() => {
     if (!subjects.some((g) => g.grade === selectedGrade)) {
       setSelectedGrade(subjects[0]?.grade || "");
@@ -177,165 +160,158 @@ const AdmSubject = () => {
         <AdminNavbar />
       </header>
 
-      <div className="flex flex-1 transition-all duration-500">
-        {/* Sidebar */}
-        <aside
-          className={`fixed left-0 z-40 transition-all duration-500 hidden md:block ${
-            isSidebarOpen ? "w-64" : "w-0 overflow-hidden"
-          }`}
-          style={{
-            top: `${navbarHeight}px`,
-            height: `calc(100vh - ${navbarHeight}px)`,
-          }}
-        >
-          <div className="h-full overflow-y-auto bg-gradient-to-b from-indigo-100 via-blue-100 to-purple-100 shadow-2xl border-r border-indigo-200">
-            <AdminSidebar />
+      {/* Main Section */}
+      <main
+        className="flex-1 p-8 overflow-y-auto transition-all duration-500"
+        style={{
+          paddingTop: `${navbarHeight + 130}px`,
+          marginLeft: "0", // No sidebar now
+        }}
+      >
+        <h1 className="text-3xl font-bold text-indigo-700 mb-6">
+          Manage Subjects & Units
+        </h1>
+
+        {/* Grade + Add Subject row */}
+        <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <label className="text-indigo-700 font-semibold">Select Grade:</label>
+            <select
+              value={selectedGrade}
+              onChange={(e) => {
+                setSelectedGrade(e.target.value);
+                setSelectedSubject("");
+              }}
+              className="p-2 border border-indigo-200 rounded-md bg-white"
+            >
+              {subjects.map((g) => (
+                <option key={g.grade} value={g.grade}>
+                  {g.grade}
+                </option>
+              ))}
+            </select>
           </div>
-        </aside>
 
-        {/* Main Section */}
-        <main
-          className="flex-1 p-8 overflow-y-auto transition-all duration-500"
-          style={{
-            paddingTop: `${navbarHeight + 130}px`,
-            marginLeft: isSidebarOpen ? "16rem" : "0",
-          }}
-        >
-          <h1 className="text-3xl font-bold text-indigo-700 mb-6">
-            Manage Grades, Subjects & Units
-          </h1>
+          <div className="flex gap-3 items-center">
+            <input
+              value={newSubject}
+              onChange={(e) => setNewSubject(e.target.value)}
+              placeholder="Add new subject"
+              className="p-2 border border-indigo-200 rounded-md bg-white"
+            />
+            <button
+              onClick={addSubject}
+              className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md"
+            >
+              <FaPlus className="inline mr-2" /> Add Subject
+            </button>
+          </div>
+        </div>
 
-          {/* Grade + Add Subject row */}
-          <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
-            <div className="flex items-center gap-3">
-              <label className="text-indigo-700 font-semibold">Select Grade:</label>
-              <select
-                value={selectedGrade}
-                onChange={(e) => {
-                  setSelectedGrade(e.target.value);
-                  setSelectedSubject("");
-                }}
-                className="p-2 border border-indigo-200 rounded-md bg-white"
-              >
-                {subjects.map((g) => (
-                  <option key={g.grade} value={g.grade}>
-                    {g.grade}
-                  </option>
-                ))}
-              </select>
+        {/* Grade Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {subjects.map((g) => (
+            <div
+              key={g.grade}
+              className={`p-5 rounded-xl border shadow-md ${
+                selectedGrade === g.grade
+                  ? "bg-indigo-50 border-indigo-400"
+                  : "bg-white border-indigo-100"
+              }`}
+            >
+              <h2 className="text-lg font-bold text-indigo-800 flex items-center gap-2">
+                <FaLayerGroup /> {g.grade}
+              </h2>
+              <p className="text-gray-600 text-sm">{g.subjects.length} Subjects</p>
             </div>
+          ))}
+        </div>
 
-            <div className="flex gap-3 items-center">
+        {/* Subject Selection */}
+        {currentGrade && currentGrade.subjects.length > 0 && (
+          <div className="flex gap-3 items-center mb-6">
+            <label className="text-indigo-700 font-semibold">Select Subject:</label>
+            <select
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+              className="p-2 border border-indigo-200 rounded-md bg-white"
+            >
+              <option value="">-- Select Subject --</option>
+              {currentGrade.subjects.map((s) => (
+                <option key={s.name} value={s.name}>
+                  {s.name} ({s.units.length} units)
+                </option>
+              ))}
+            </select>
+
+            {selectedSubject && (
+              <button
+                onClick={() => removeSubject(selectedSubject)}
+                className="px-3 py-2 bg-red-600 text-white rounded-md"
+              >
+                <FaTrash className="inline mr-1" /> Delete Subject
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Unit Management */}
+        {selectedSubject && (
+          <>
+            <h3 className="text-2xl font-semibold text-indigo-700 mb-4 flex items-center gap-2">
+              <FaBookOpen /> {selectedSubject} Units
+            </h3>
+
+            {/* Add Unit */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
               <input
-                value={newSubject}
-                onChange={(e) => setNewSubject(e.target.value)}
-                placeholder="Add new subject"
-                className="p-2 border border-indigo-200 rounded-md bg-white"
+                value={newUnit.name}
+                onChange={(e) => setNewUnit({ ...newUnit, name: e.target.value })}
+                placeholder="Unit (Lesson) Name"
+                className="p-2 border border-indigo-200 rounded-md"
+              />
+              <input
+                value={newUnit.content}
+                onChange={(e) => setNewUnit({ ...newUnit, content: e.target.value })}
+                placeholder="Lesson Description"
+                className="p-2 border border-indigo-200 rounded-md"
               />
               <button
-                onClick={addSubject}
-                className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md"
+                onClick={addUnit}
+                className="px-4 py-2 bg-green-600 text-white rounded-md"
               >
-                <FaPlus className="inline mr-2" /> Add Subject
+                <FaPlus className="inline mr-1" /> Add Unit
               </button>
             </div>
-          </div>
 
-          {/* Grade Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {subjects.map((g) => (
-              <div
-                key={g.grade}
-                className={`p-5 rounded-xl border shadow-md ${
-                  selectedGrade === g.grade ? "bg-indigo-50 border-indigo-400" : "bg-white border-indigo-100"
-                }`}
-              >
-                <h2 className="text-lg font-bold text-indigo-800 flex items-center gap-2">
-                  <FaLayerGroup /> {g.grade}
-                </h2>
-                <p className="text-gray-600 text-sm">{g.subjects.length} Subjects</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Subject Selection */}
-          {currentGrade && currentGrade.subjects.length > 0 && (
-            <div className="flex gap-3 items-center mb-6">
-              <label className="text-indigo-700 font-semibold">Select Subject:</label>
-              <select
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                className="p-2 border border-indigo-200 rounded-md bg-white"
-              >
-                <option value="">-- Select Subject --</option>
-                {currentGrade.subjects.map((s) => (
-                  <option key={s.name} value={s.name}>
-                    {s.name} ({s.units.length} units)
-                  </option>
-                ))}
-              </select>
-
-              {selectedSubject && (
-                <button
-                  onClick={() => removeSubject(selectedSubject)}
-                  className="px-3 py-2 bg-red-600 text-white rounded-md"
-                >
-                  <FaTrash className="inline mr-1" /> Delete Subject
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Unit Management */}
-          {selectedSubject && (
-            <>
-              <h3 className="text-2xl font-semibold text-indigo-700 mb-4 flex items-center gap-2">
-                <FaBookOpen /> {selectedSubject} Units
-              </h3>
-
-              {/* Add Unit */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-                <input
-                  value={newUnit.name}
-                  onChange={(e) => setNewUnit({ ...newUnit, name: e.target.value })}
-                  placeholder="Unit (Lesson) Name"
-                  className="p-2 border border-indigo-200 rounded-md"
-                />
-                <input
-                  value={newUnit.content}
-                  onChange={(e) => setNewUnit({ ...newUnit, content: e.target.value })}
-                  placeholder="Lesson Description"
-                  className="p-2 border border-indigo-200 rounded-md"
-                />
-                <button onClick={addUnit} className="px-4 py-2 bg-green-600 text-white rounded-md">
-                  <FaPlus className="inline mr-1" /> Add Unit
-                </button>
-              </div>
-
-              {/* Unit List */}
-              {currentSubject?.units.length === 0 ? (
-                <p className="text-gray-500">No units yet. Add lessons using the form above.</p>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {currentSubject.units.map((u) => (
-                    <div key={u.id} className="p-4 bg-white/80 border rounded-xl shadow-md">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold text-indigo-800">{u.name}</h4>
-                          <p className="text-gray-700 text-sm">{u.content}</p>
-                        </div>
-                        <button onClick={() => removeUnit(u.id)} className="text-red-600 hover:text-red-800">
-                          <FaTrash />
-                        </button>
+            {/* Unit List */}
+            {currentSubject?.units.length === 0 ? (
+              <p className="text-gray-500">
+                No units yet. Add lessons using the form above.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {currentSubject.units.map((u) => (
+                  <div key={u.id} className="p-4 bg-white/80 border rounded-xl shadow-md">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold text-indigo-800">{u.name}</h4>
+                        <p className="text-gray-700 text-sm">{u.content}</p>
                       </div>
+                      <button
+                        onClick={() => removeUnit(u.id)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <FaTrash />
+                      </button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </main>
-      </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </main>
     </div>
   );
 };

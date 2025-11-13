@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaPlus, FaTrash, FaQuestionCircle, FaSave } from "react-icons/fa";
-import AdminSidebar from "../../components/layouts/AdminSidebar";
 import AdminNavbar from "../../components/layouts/AdminNavbar";
 import "../../index.css";
 import "../../admin.css";
@@ -42,7 +41,6 @@ const DEFAULT_UNITS = {
 const AdmQuiz = () => {
   const navbarRef = useRef(null);
   const [navbarHeight, setNavbarHeight] = useState(85);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [quizzes, setQuizzes] = useState([]);
   const [selectedGrade, setSelectedGrade] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
@@ -70,22 +68,14 @@ const AdmQuiz = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(quizzes));
   }, [quizzes]);
 
-  // ✅ Navbar & Sidebar
+  // ✅ Navbar height tracking
   useEffect(() => {
     const updateHeight = () => {
       if (navbarRef.current) setNavbarHeight(navbarRef.current.offsetHeight);
     };
     updateHeight();
     window.addEventListener("resize", updateHeight);
-
-    const handleResize = () => setIsSidebarOpen(window.innerWidth >= 1024);
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", updateHeight);
-      window.removeEventListener("resize", handleResize);
-    };
+    return () => window.removeEventListener("resize", updateHeight);
   }, []);
 
   // ✅ Add Quiz
@@ -176,272 +166,248 @@ const AdmQuiz = () => {
         <AdminNavbar />
       </header>
 
-      <div className="flex flex-1 transition-all duration-500">
-        {/* Sidebar */}
-        <aside
-          className={`fixed left-0 z-40 hidden md:block transition-all duration-500 ${
-            isSidebarOpen ? "w-64" : "w-0 overflow-hidden"
-          }`}
-          style={{
-            top: `${navbarHeight}px`,
-            height: `calc(100vh - ${navbarHeight}px)`,
-          }}
-        >
-          <div className="h-full overflow-y-auto bg-gradient-to-b from-indigo-100 via-blue-100 to-purple-100 shadow-2xl border-r border-indigo-200">
-            <AdminSidebar />
+      <main
+        className="flex-1 p-8 overflow-y-auto"
+        style={{ paddingTop: `${navbarHeight + 130}px` }}
+      >
+        {/* Summary */}
+        <h1 className="text-3xl font-bold text-indigo-700 mb-6">
+          Manage Quizzes & Questions
+        </h1>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+          <div className="admin-card p-5 text-center">
+            <h4 className="text-sm text-indigo-600 font-semibold">Quizzes</h4>
+            <p className="text-3xl font-bold text-indigo-800">{totalQuizzes}</p>
           </div>
-        </aside>
-
-        {/* Main */}
-        <main
-          className="flex-1 p-8 overflow-y-auto"
-          style={{
-            paddingTop: `${navbarHeight + 130}px`,
-            marginLeft: isSidebarOpen ? "16rem" : "0",
-          }}
-        >
-          {/* Summary */}
-
-           <h1 className="text-3xl font-bold text-indigo-700 mb-6">
-            Manage Quizzes & Questions
-          </h1>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-            <div className="admin-card p-5 text-center">
-              <h4 className="text-sm text-indigo-600 font-semibold">Quizzes</h4>
-              <p className="text-3xl font-bold text-indigo-800">{totalQuizzes}</p>
-            </div>
-            <div className="admin-card p-5 text-center">
-              <h4 className="text-sm text-indigo-600 font-semibold">Questions</h4>
-              <p className="text-3xl font-bold text-indigo-800">
-                {totalQuestions}
-              </p>
-            </div>
-            <div className="admin-card p-5 text-center">
-              <h4 className="text-sm text-indigo-600 font-semibold">
-                Question Limit
-              </h4>
-              <p className="text-3xl font-bold text-indigo-800">{quizLimit}</p>
-            </div>
+          <div className="admin-card p-5 text-center">
+            <h4 className="text-sm text-indigo-600 font-semibold">Questions</h4>
+            <p className="text-3xl font-bold text-indigo-800">
+              {totalQuestions}
+            </p>
           </div>
-
-         
-
-          {/* Selectors */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
-            <select
-              value={selectedGrade}
-              onChange={(e) => {
-                setSelectedGrade(e.target.value);
-                setSelectedSubject("");
-                setSelectedUnit("");
-              }}
-              className="p-2 border border-indigo-200 rounded-md bg-white"
-            >
-              <option value="">Select Grade</option>
-              {DEFAULT_GRADES.map((g) => (
-                <option key={g}>{g}</option>
-              ))}
-            </select>
-
-            <select
-              value={selectedSubject}
-              onChange={(e) => {
-                setSelectedSubject(e.target.value);
-                setSelectedUnit("");
-              }}
-              className="p-2 border border-indigo-200 rounded-md bg-white"
-            >
-              <option value="">Select Subject</option>
-              {DEFAULT_SUBJECTS[selectedGrade]?.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-
-            <select
-              value={selectedUnit}
-              onChange={(e) => setSelectedUnit(e.target.value)}
-              className="p-2 border border-indigo-200 rounded-md bg-white"
-            >
-              <option value="">Select Unit</option>
-              {DEFAULT_UNITS[selectedSubject]?.map((u) => (
-                <option key={u}>{u}</option>
-              ))}
-            </select>
-
-            <input
-              type="number"
-              min={1} // prevent negative/zero
-              value={quizLimit}
-              onChange={(e) => setQuizLimit(Math.max(1, Number(e.target.value)))}
-              placeholder="No. of questions allowed"
-              className="p-2 border border-indigo-200 rounded-md"
-            />
-
-            <input
-              value={newQuiz.title}
-              onChange={(e) => setNewQuiz({ ...newQuiz, title: e.target.value })}
-              placeholder="Quiz Title"
-              className="p-2 border border-indigo-200 rounded-md"
-            />
+          <div className="admin-card p-5 text-center">
+            <h4 className="text-sm text-indigo-600 font-semibold">
+              Question Limit
+            </h4>
+            <p className="text-3xl font-bold text-indigo-800">{quizLimit}</p>
           </div>
+        </div>
 
-          {/* Add Quiz */}
-          <div className="flex gap-3 mb-8">
-            <input
-              value={newQuiz.description}
-              onChange={(e) =>
-                setNewQuiz({ ...newQuiz, description: e.target.value })
-              }
-              placeholder="Quiz Description"
-              className="p-2 border border-indigo-200 rounded-md flex-1"
-            />
-            <button
-              onClick={addQuiz}
-              className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md"
-            >
-              <FaPlus className="inline mr-1" /> Add Quiz
-            </button>
-          </div>
+        {/* Selectors */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+          <select
+            value={selectedGrade}
+            onChange={(e) => {
+              setSelectedGrade(e.target.value);
+              setSelectedSubject("");
+              setSelectedUnit("");
+            }}
+            className="p-2 border border-indigo-200 rounded-md bg-white"
+          >
+            <option value="">Select Grade</option>
+            {DEFAULT_GRADES.map((g) => (
+              <option key={g}>{g}</option>
+            ))}
+          </select>
 
-          {/* Quizzes */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {quizzes.length === 0 ? (
-              <p className="text-gray-500">No quizzes yet.</p>
-            ) : (
-              quizzes.map((quiz) => (
-                <div key={quiz.id} className="admin-card p-5 rounded-xl">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="text-xl font-bold text-indigo-800">
-                        {quiz.title}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {quiz.grade} → {quiz.subject} → {quiz.unit}
-                      </p>
-                      <p className="text-gray-700 text-sm">{quiz.description}</p>
-                    </div>
-                    <button
-                      onClick={() => removeQuiz(quiz.id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <FaTrash />
-                    </button>
+          <select
+            value={selectedSubject}
+            onChange={(e) => {
+              setSelectedSubject(e.target.value);
+              setSelectedUnit("");
+            }}
+            className="p-2 border border-indigo-200 rounded-md bg-white"
+          >
+            <option value="">Select Subject</option>
+            {DEFAULT_SUBJECTS[selectedGrade]?.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedUnit}
+            onChange={(e) => setSelectedUnit(e.target.value)}
+            className="p-2 border border-indigo-200 rounded-md bg-white"
+          >
+            <option value="">Select Unit</option>
+            {DEFAULT_UNITS[selectedSubject]?.map((u) => (
+              <option key={u}>{u}</option>
+            ))}
+          </select>
+
+          <input
+            type="number"
+            min={1}
+            value={quizLimit}
+            onChange={(e) => setQuizLimit(Math.max(1, Number(e.target.value)))}
+            placeholder="No. of questions allowed"
+            className="p-2 border border-indigo-200 rounded-md"
+          />
+
+          <input
+            value={newQuiz.title}
+            onChange={(e) => setNewQuiz({ ...newQuiz, title: e.target.value })}
+            placeholder="Quiz Title"
+            className="p-2 border border-indigo-200 rounded-md"
+          />
+        </div>
+
+        {/* Add Quiz */}
+        <div className="flex gap-3 mb-8">
+          <input
+            value={newQuiz.description}
+            onChange={(e) =>
+              setNewQuiz({ ...newQuiz, description: e.target.value })
+            }
+            placeholder="Quiz Description"
+            className="p-2 border border-indigo-200 rounded-md flex-1"
+          />
+          <button
+            onClick={addQuiz}
+            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md"
+          >
+            <FaPlus className="inline mr-1" /> Add Quiz
+          </button>
+        </div>
+
+        {/* Quizzes */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {quizzes.length === 0 ? (
+            <p className="text-gray-500">No quizzes yet.</p>
+          ) : (
+            quizzes.map((quiz) => (
+              <div key={quiz.id} className="admin-card p-5 rounded-xl">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="text-xl font-bold text-indigo-800">
+                      {quiz.title}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {quiz.grade} → {quiz.subject} → {quiz.unit}
+                    </p>
+                    <p className="text-gray-700 text-sm">{quiz.description}</p>
                   </div>
+                  <button
+                    onClick={() => removeQuiz(quiz.id)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
 
-                  {/* Add Question Form */}
-                  {selectedQuiz?.id === quiz.id ? (
-                    <div className="p-4 border rounded-lg bg-white/80 mb-3">
-                      <h4 className="font-semibold text-indigo-700 mb-2">
-                        Add Question
-                      </h4>
+                {/* Add Question Form */}
+                {selectedQuiz?.id === quiz.id ? (
+                  <div className="p-4 border rounded-lg bg-white/80 mb-3">
+                    <h4 className="font-semibold text-indigo-700 mb-2">
+                      Add Question
+                    </h4>
+                    <input
+                      value={newQuestion.text}
+                      onChange={(e) =>
+                        setNewQuestion({
+                          ...newQuestion,
+                          text: e.target.value,
+                        })
+                      }
+                      placeholder="Question text"
+                      className="p-2 border border-indigo-200 rounded-md mb-2 w-full"
+                    />
+                    {["a", "b", "c", "d"].map((opt) => (
                       <input
-                        value={newQuestion.text}
+                        key={opt}
+                        value={newQuestion[opt]}
                         onChange={(e) =>
                           setNewQuestion({
                             ...newQuestion,
-                            text: e.target.value,
+                            [opt]: e.target.value,
                           })
                         }
-                        placeholder="Question text"
+                        placeholder={`Option ${opt.toUpperCase()}`}
                         className="p-2 border border-indigo-200 rounded-md mb-2 w-full"
                       />
-                      {["a", "b", "c", "d"].map((opt) => (
-                        <input
-                          key={opt}
-                          value={newQuestion[opt]}
-                          onChange={(e) =>
-                            setNewQuestion({
-                              ...newQuestion,
-                              [opt]: e.target.value,
-                            })
-                          }
-                          placeholder={`Option ${opt.toUpperCase()}`}
-                          className="p-2 border border-indigo-200 rounded-md mb-2 w-full"
-                        />
-                      ))}
-                      <select
-                        value={newQuestion.correct}
-                        onChange={(e) =>
-                          setNewQuestion({
-                            ...newQuestion,
-                            correct: e.target.value,
-                          })
-                        }
-                        className="p-2 border border-indigo-200 rounded-md mb-2 w-full"
-                      >
-                        <option value="">Select Correct Answer</option>
-                        <option value="a">A</option>
-                        <option value="b">B</option>
-                        <option value="c">C</option>
-                        <option value="d">D</option>
-                      </select>
-                      <button
-                        onClick={addQuestion}
-                        disabled={quiz.questions.length >= quiz.limit}
-                        className={`w-full rounded-md py-2 mt-2 ${
-                          quiz.questions.length >= quiz.limit
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-green-600 text-white"
-                        }`}
-                      >
-                        <FaSave className="inline mr-1" /> Save Question
-                      </button>
-                      {quiz.questions.length >= quiz.limit && (
-                        <p className="text-red-600 mt-2 text-sm">
-                          Maximum number of questions reached!
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setSelectedQuiz(quiz)}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-md"
+                    ))}
+                    <select
+                      value={newQuestion.correct}
+                      onChange={(e) =>
+                        setNewQuestion({
+                          ...newQuestion,
+                          correct: e.target.value,
+                        })
+                      }
+                      className="p-2 border border-indigo-200 rounded-md mb-2 w-full"
                     >
-                      <FaQuestionCircle className="inline mr-1" /> Add Question
+                      <option value="">Select Correct Answer</option>
+                      <option value="a">A</option>
+                      <option value="b">B</option>
+                      <option value="c">C</option>
+                      <option value="d">D</option>
+                    </select>
+                    <button
+                      onClick={addQuestion}
+                      disabled={quiz.questions.length >= quiz.limit}
+                      className={`w-full rounded-md py-2 mt-2 ${
+                        quiz.questions.length >= quiz.limit
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-green-600 text-white"
+                      }`}
+                    >
+                      <FaSave className="inline mr-1" /> Save Question
                     </button>
-                  )}
+                    {quiz.questions.length >= quiz.limit && (
+                      <p className="text-red-600 mt-2 text-sm">
+                        Maximum number of questions reached!
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setSelectedQuiz(quiz)}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-md"
+                  >
+                    <FaQuestionCircle className="inline mr-1" /> Add Question
+                  </button>
+                )}
 
-                  {/* Show Questions */}
-                  {quiz.questions.length > 0 && (
-                    <div className="mt-4 bg-indigo-50 p-3 rounded-md">
-                      <h4 className="font-semibold text-indigo-700 mb-2">
-                        Questions ({quiz.questions.length}/{quiz.limit})
-                      </h4>
-                      {quiz.questions.map((q, i) => (
-                        <div
-                          key={q.id}
-                          className="p-2 bg-white border rounded-md mb-2 flex justify-between items-start"
-                        >
-                          <div>
-                            <p className="font-semibold text-indigo-800">
-                              Q{i + 1}. {q.text}
-                            </p>
-                            <ul className="text-sm text-gray-700">
-                              <li>A. {q.a}</li>
-                              <li>B. {q.b}</li>
-                              <li>C. {q.c}</li>
-                              <li>D. {q.d}</li>
-                              <li className="text-green-600 font-semibold">
-                                ✅ Correct: {q.correct.toUpperCase()}
-                              </li>
-                            </ul>
-                          </div>
-                          <button
-                            onClick={() => removeQuestion(quiz.id, q.id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <FaTrash />
-                          </button>
+                {/* Show Questions */}
+                {quiz.questions.length > 0 && (
+                  <div className="mt-4 bg-indigo-50 p-3 rounded-md">
+                    <h4 className="font-semibold text-indigo-700 mb-2">
+                      Questions ({quiz.questions.length}/{quiz.limit})
+                    </h4>
+                    {quiz.questions.map((q, i) => (
+                      <div
+                        key={q.id}
+                        className="p-2 bg-white border rounded-md mb-2 flex justify-between items-start"
+                      >
+                        <div>
+                          <p className="font-semibold text-indigo-800">
+                            Q{i + 1}. {q.text}
+                          </p>
+                          <ul className="text-sm text-gray-700">
+                            <li>A. {q.a}</li>
+                            <li>B. {q.b}</li>
+                            <li>C. {q.c}</li>
+                            <li>D. {q.d}</li>
+                            <li className="text-green-600 font-semibold">
+                              ✅ Correct: {q.correct.toUpperCase()}
+                            </li>
+                          </ul>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </main>
-      </div>
+                        <button
+                          onClick={() => removeQuestion(quiz.id, q.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </main>
     </div>
   );
 };

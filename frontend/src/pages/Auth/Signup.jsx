@@ -154,6 +154,29 @@ const Signup = () => {
             </div>
           </div>
 
+           {/* Confirm Password with Eye Toggle */}
+          <div className="flex flex-col relative">
+            <label className="mb-1 text-gray-700 font-medium text-sm">Confirm Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="********"
+                className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-indigo-600 focus:outline-none"
+              >
+                {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+              </button>
+            </div>
+          </div>
+
           {/* Error Message */}
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
