@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import AdminNavbar from "../../components/layouts/AdminNavbar.jsx";
 import "../../index.css";
+import "../../admin.css";
 
 function AdmHome() {
   const navbarRef = useRef(null);
@@ -17,7 +18,11 @@ function AdmHome() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col app-background">
+    
+
+    <div className="min-h-screen flex flex-col app-background app-bg-bubble">
+
+
       {/* ✅ Navbar fixed at top */}
       <header ref={navbarRef} className="w-full fixed top-0 left-0 z-50">
         <AdminNavbar />

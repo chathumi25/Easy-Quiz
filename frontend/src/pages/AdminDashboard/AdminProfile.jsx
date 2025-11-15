@@ -1,265 +1,393 @@
-import React, { useState, useEffect, useRef } from "react";
-import { FaCamera, FaLock, FaTrash } from "react-icons/fa";
+import React, { useState, useEffect, useRef, useContext } from "react";
+import {
+  FaCamera,
+  FaLock,
+  FaTrash,
+  FaEye,
+  FaEyeSlash,
+} from "react-icons/fa";
+
 import AdminNavbar from "../../components/layouts/AdminNavbar";
-import "../../index.css";
+import axios from "../../utils/axiosInstance";
+import { BASE_URL } from "../../utils/apiPaths";
+import { UserContext } from "../../context/userContext";
+import "../../admin.css";
 
 const AdminProfile = () => {
-  const user = JSON.parse(localStorage.getItem("user")) || {
-    name: "Admin",
-    email: "admin@easyquiz.com",
-    role: "Administrator",
-    profileImage: "",
-  };
+  // ⭐ USE CONTEXT
+  const { user: storedUser, updateUser } = useContext(UserContext);
 
-  const [profileImage, setProfileImage] = useState(user.profileImage);
-  const [tempImage, setTempImage] = useState(profileImage);
+  const [name, setName] = useState(storedUser?.name || "");
+  const [email] = useState(storedUser?.email || "");
+  const [role] = useState(storedUser?.role || "");
+
+  const [tempImage, setTempImage] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  const [message, setMessage] = useState("");
+  const [passMessage, setPassMessage] = useState("");
+
   const [passwords, setPasswords] = useState({
+    adminKey: "",
     current: "",
     new: "",
     confirm: "",
   });
+
+  const [showPass, setShowPass] = useState({
+    adminKey: false,
+    current: false,
+    new: false,
+    confirm: false,
+  });
+
   const [navbarHeight, setNavbarHeight] = useState(85);
   const navbarRef = useRef(null);
   const fileInputRef = useRef(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // ✅ Detect Navbar Height
+  // ⭐ FIX: Sync image with context
   useEffect(() => {
-    const updateNavbarHeight = () => {
-      if (navbarRef.current) setNavbarHeight(navbarRef.current.offsetHeight);
+    if (!storedUser) return;
+
+    let img = storedUser.profileImage;
+
+    if (img?.startsWith("/uploads")) {
+      img = BASE_URL + img;
+    }
+
+    setTempImage(img || "");
+  }, [storedUser]);
+
+  // NAVBAR HEIGHT
+  useEffect(() => {
+    const updateHeight = () => {
+      if (navbarRef.current)
+        setNavbarHeight(navbarRef.current.offsetHeight);
     };
-    updateNavbarHeight();
-    window.addEventListener("resize", updateNavbarHeight);
-    return () => window.removeEventListener("resize", updateNavbarHeight);
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
   }, []);
 
-  // ✅ Extract first initial
   const getInitial = (name) =>
     name && name.length > 0 ? name[0].toUpperCase() : "U";
 
-  // ✅ Handle image upload
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const imageURL = URL.createObjectURL(file);
-      setTempImage(imageURL);
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setTempImage(url);
     }
   };
 
-  // ✅ Save profile
-  const handleSaveProfile = () => {
-    setProfileImage(tempImage);
-    localStorage.setItem(
-      "user",
-      JSON.stringify({ ...user, profileImage: tempImage })
-    );
-    alert("✅ Profile updated successfully!");
+  // ⭐ SAVE PROFILE
+  const handleSaveProfile = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("name", name);
+
+      if (selectedFile) {
+        formData.append("profileImage", selectedFile);
+      }
+
+      const res = await axios.put("/api/adm/profile/update", formData);
+
+      if (res.data.success) {
+        const updatedUser = res.data.user;
+
+        const fullImage = updatedUser.profileImage
+          ? `${BASE_URL}${updatedUser.profileImage}`
+          : "";
+
+        updateUser({
+          ...storedUser,
+          name: updatedUser.name,
+          profileImage: updatedUser.profileImage,
+        });
+
+        setTempImage(fullImage);
+        setMessage("✅ Profile updated successfully!");
+      } else {
+        setMessage("❌ Update failed.");
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage(
+        "❌ Update failed: " + (err.response?.data?.message || "")
+      );
+    }
+
+    setTimeout(() => setMessage(""), 3000);
   };
 
-  // ✅ Change password
-  const handleChangePassword = () => {
-    const { current, new: newPass, confirm } = passwords;
-    if (!current || !newPass || !confirm)
-      return alert("⚠️ Please fill out all fields.");
-    if (newPass !== confirm) return alert("❌ Passwords do not match!");
-    alert("✅ Password changed successfully!");
-    setPasswords({ current: "", new: "", confirm: "" });
+  // ⭐ FIXED: CHANGE PASSWORD (uses adminKey field)
+  const handleChangePassword = async () => {
+    const { adminKey, current, new: newPass, confirm } = passwords;
+
+    if (!adminKey || !current || !newPass || !confirm) {
+      setPassMessage("⚠ Please fill all fields.");
+      return;
+    }
+
+    if (newPass !== confirm) {
+      setPassMessage("❌ New passwords do not match.");
+      return;
+    }
+
+    try {
+      const res = await axios.put("/api/adm/profile/change-password", {
+        adminKey: adminKey,
+        currentPassword: current,
+        newPassword: newPass,
+      });
+
+      if (res.data.success) {
+        setPassMessage("✅ Password updated successfully!");
+        setPasswords({ adminKey: "", current: "", new: "", confirm: "" });
+      } else {
+        setPassMessage("❌ Password update failed.");
+      }
+    } catch (err) {
+      setPassMessage(
+        "❌ Error: " + (err.response?.data?.message || "")
+      );
+    }
+
+    setTimeout(() => setPassMessage(""), 3000);
   };
 
-  // ✅ Delete account logic
-  const handleDeleteAccount = () => setShowDeleteConfirm(true);
-  const confirmDelete = () => {
-    alert("⚠️ Account deleted!");
-    localStorage.clear();
-    window.location.href = "/login";
-  };
-  const cancelDelete = () => setShowDeleteConfirm(false);
+  // DELETE ACCOUNT
+  const confirmDelete = async () => {
+    try {
+      const res = await axios.delete("/api/adm/profile/delete-account");
 
+      if (res.data.success) {
+        localStorage.clear();
+        window.location.href = "/login";
+      }
+    } catch (err) {
+      alert("Error deleting account");
+    }
+  };
+
+  // UI
   return (
     <div className="min-h-screen flex flex-col app-background">
-      {/* Navbar */}
       <header ref={navbarRef} className="w-full fixed top-0 left-0 z-50">
         <AdminNavbar />
       </header>
 
-      {/* Main Content */}
       <main
-        className="flex-1 p-10 overflow-y-auto transition-all duration-500"
-        style={{
-          marginTop: `${navbarHeight + 130}px`,
-        }}
+        className="p-6 md:p-12"
+        style={{ marginTop: `${navbarHeight + 120}px` }}
       >
-        <div className="max-w-4xl mx-auto bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl p-10 border border-indigo-100">
-          {/* Header */}
-          <h2 className="text-3xl font-bold text-center bg-gradient-to-r from-indigo-700 to-purple-800 bg-clip-text text-transparent mb-8">
-            Admin Profile Settings
-          </h2>
+        <div className="max-w-6xl mx-auto space-y-10">
 
-          {/* Profile Section */}
-          <div className="flex flex-col items-center">
-            <div className="relative w-32 h-32 rounded-full border-4 border-indigo-300 shadow-xl overflow-hidden">
-              {tempImage ? (
-                <img
-                  src={tempImage}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
+          {/* HEADER */}
+          <div className="text-center animate-fadeIn">
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-700 to-purple-800 bg-clip-text text-transparent">
+              Admin Profile Settings
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Manage profile, password & account.
+            </p>
+          </div>
+
+          {/* PROFILE CARD */}
+          <div className="admin-card p-8 md:p-10 animate-fadeInExpand">
+            <h2 className="text-2xl font-semibold text-indigo-700 mb-6">
+              Profile Information
+            </h2>
+
+            {message && (
+              <div className="p-3 mb-4 rounded-lg bg-green-100 text-green-700 font-medium">
+                {message}
+              </div>
+            )}
+
+            <div className="flex flex-col md:flex-row items-center gap-10">
+
+              {/* IMAGE */}
+              <div className="relative w-40 h-40 rounded-full overflow-hidden border-4 border-indigo-300 shadow-xl">
+                {tempImage ? (
+                  <img src={tempImage} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-indigo-500 text-white flex items-center justify-center text-5xl font-bold">
+                    {getInitial(name)}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => fileInputRef.current.click()}
+                  className="absolute bottom-2 right-2 bg-indigo-600 p-3 text-white rounded-full"
+                >
+                  <FaCamera />
+                </button>
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageChange}
                 />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white text-4xl font-bold">
-                  {getInitial(user.name)}
+              </div>
+
+              {/* PROFILE FORM */}
+              <div className="flex-1 space-y-5 w-full">
+                <div>
+                  <label className="font-medium text-sm">Full Name</label>
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full p-3 rounded-xl border bg-white/70"
+                  />
                 </div>
-              )}
-              <button
-                onClick={() => fileInputRef.current.click()}
-                className="absolute bottom-1 right-1 bg-indigo-600 text-white p-3 rounded-full hover:bg-indigo-700 shadow-md transition"
-              >
-                <FaCamera />
-              </button>
+
+                <div>
+                  <label className="font-medium text-sm">Email Address</label>
+                  <input
+                    value={email}
+                    readOnly
+                    className="w-full p-3 rounded-xl border bg-white/70"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-medium text-sm">Role</label>
+                  <input
+                    value={role}
+                    readOnly
+                    className="w-full p-3 rounded-xl border bg-white/70"
+                  />
+                </div>
+
+                <button onClick={handleSaveProfile} className="btn-gradient mt-4">
+                  Save Profile
+                </button>
+              </div>
             </div>
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileInputRef}
-              onChange={handleImageChange}
-              className="hidden"
+          </div>
+
+          {/* PASSWORD CARD */}
+          <div className="admin-card p-8 md:p-10 animate-fadeInExpand">
+            <h2 className="text-2xl font-semibold text-indigo-700 mb-6 flex items-center gap-2">
+              <FaLock /> Change Password
+            </h2>
+
+            {passMessage && (
+              <div className="p-3 mb-4 rounded-lg bg-indigo-100 text-indigo-700 font-medium">
+                {passMessage}
+              </div>
+            )}
+
+            {/* ⭐ ADDED ADMIN KEY INPUT FIELD */}
+            <PasswordField
+              label="Admin Security Key"
+              value={passwords.adminKey}
+              onChange={(v) =>
+                setPasswords({ ...passwords, adminKey: v })
+              }
+              show={showPass.adminKey}
+              toggle={() =>
+                setShowPass({ ...showPass, adminKey: !showPass.adminKey })
+              }
             />
 
-            <button
-              onClick={handleSaveProfile}
-              className="mt-6 px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-md hover:scale-105 transition"
-            >
-              Save Profile
-            </button>
-          </div>
-
-          {/* Info Section */}
-          <div className="mt-10 space-y-6">
-            <div>
-              <label className="block text-sm font-semibold mb-2">
-                Full Name
-              </label>
-              <input
-                type="text"
-                value={user.name}
-                readOnly
-                className="w-full p-3 rounded-xl border border-indigo-200 bg-white/70 text-gray-800"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold mb-2">
-                Email
-              </label>
-              <input
-                type="text"
-                value={user.email}
-                readOnly
-                className="w-full p-3 rounded-xl border border-indigo-200 bg-white/70 text-gray-800"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold mb-2">Role</label>
-              <input
-                type="text"
-                value={user.role}
-                readOnly
-                className="w-full p-3 rounded-xl border border-indigo-200 bg-white/70 text-gray-800"
-              />
-            </div>
-          </div>
-
-          {/* Change Password Section */}
-          <div className="mt-10 border-t border-indigo-200 pt-8">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <FaLock className="text-indigo-600" /> Change Password
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input
-                type="password"
-                placeholder="Current Password"
+            <div className="grid md:grid-cols-3 gap-4 mt-4">
+              <PasswordField
+                label="Current Password"
                 value={passwords.current}
-                onChange={(e) =>
-                  setPasswords({ ...passwords, current: e.target.value })
+                onChange={(v) =>
+                  setPasswords({ ...passwords, current: v })
                 }
-                className="p-3 rounded-xl border border-indigo-200 bg-white/70 focus:ring-2 focus:ring-indigo-400"
+                show={showPass.current}
+                toggle={() =>
+                  setShowPass({ ...showPass, current: !showPass.current })
+                }
               />
-              <input
-                type="password"
-                placeholder="New Password"
+
+              <PasswordField
+                label="New Password"
                 value={passwords.new}
-                onChange={(e) =>
-                  setPasswords({ ...passwords, new: e.target.value })
+                onChange={(v) => setPasswords({ ...passwords, new: v })}
+                show={showPass.new}
+                toggle={() =>
+                  setShowPass({ ...showPass, new: !showPass.new })
                 }
-                className="p-3 rounded-xl border border-indigo-200 bg-white/70 focus:ring-2 focus:ring-indigo-400"
               />
-              <input
-                type="password"
-                placeholder="Confirm Password"
+
+              <PasswordField
+                label="Confirm Password"
                 value={passwords.confirm}
-                onChange={(e) =>
-                  setPasswords({ ...passwords, confirm: e.target.value })
+                onChange={(v) =>
+                  setPasswords({ ...passwords, confirm: v })
                 }
-                className="p-3 rounded-xl border border-indigo-200 bg-white/70 focus:ring-2 focus:ring-indigo-400"
+                show={showPass.confirm}
+                toggle={() =>
+                  setShowPass({
+                    ...showPass,
+                    confirm: !showPass.confirm,
+                  })
+                }
               />
             </div>
-            <button
-              onClick={handleChangePassword}
-              className="mt-6 px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-md hover:scale-105 transition"
-            >
+
+            <button onClick={handleChangePassword} className="btn-gradient mt-6">
               Update Password
             </button>
           </div>
 
-          {/* Delete Account Section */}
-          <div className="mt-10 border-t border-indigo-200 pt-8 text-center">
-            <h3 className="text-lg font-semibold text-red-600 mb-3">
+          {/* DELETE SECTION */}
+          <div className="admin-card p-8 md:p-10 text-center animate-fadeInExpand">
+            <h2 className="text-xl font-semibold text-red-600 mb-4">
               Danger Zone
-            </h3>
+            </h2>
             <button
-              onClick={handleDeleteAccount}
-              className="px-6 py-2 bg-red-600 text-white rounded-xl font-semibold shadow-md hover:bg-red-700 transition"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="btn-danger px-6 py-2"
             >
               <FaTrash className="inline mr-2" />
-              Delete Account
+              Delete My Account
             </button>
           </div>
 
-          {/* About Section */}
-          <div className="mt-10 border-t border-indigo-200 pt-8">
-            <h3 className="text-xl font-semibold text-indigo-700 mb-4">
+          {/* ABOUT ADMIN */}
+          <div className="admin-card p-8 md:p-10 animate-fadeInExpand">
+            <h2 className="text-2xl font-semibold text-indigo-700 mb-4">
               About Admin Role
-            </h3>
+            </h2>
             <p className="text-gray-700 leading-relaxed">
-              As an administrator, you have full control over managing users,
-              subjects, quizzes, and performance analytics across the EasyQuiz
-              system. You can also oversee student progress and maintain data
-              integrity.
+              As an EasyQuiz administrator, you hold complete authority over the system.
+              You can manage users, grades, subjects, quiz banks, evaluations, and track
+              platform-wide academic performance. Admins ensure the learning environment
+              stays secure, organized, and efficient providing students and teachers
+              the best experience possible.
             </p>
           </div>
+
         </div>
       </main>
 
-      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-          <div className="bg-white/95 rounded-3xl p-8 shadow-2xl border border-red-100 w-[400px] text-center">
-            <h2 className="text-xl font-bold text-red-600 mb-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-2xl shadow-xl">
+            <h3 className="text-xl font-bold text-red-600 mb-4">
               Delete Your Account?
-            </h2>
+            </h3>
             <p className="text-gray-600 mb-6">
-              This action is permanent and cannot be undone.
+              This action cannot be undone.
             </p>
+
             <div className="flex justify-center gap-4">
-              <button
-                onClick={confirmDelete}
-                className="px-5 py-2 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition"
-              >
+              <button onClick={confirmDelete} className="btn-danger px-6 py-2">
                 Yes, Delete
               </button>
               <button
-                onClick={cancelDelete}
-                className="px-5 py-2 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-6 py-2 bg-gray-200 rounded-xl"
               >
                 Cancel
               </button>
@@ -270,5 +398,23 @@ const AdminProfile = () => {
     </div>
   );
 };
+
+const PasswordField = ({ label, value, onChange, show, toggle }) => (
+  <div className="relative">
+    <input
+      type={show ? "text" : "password"}
+      placeholder={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="p-3 w-full rounded-xl border bg-white/70 pr-12"
+    />
+    <span
+      onClick={toggle}
+      className="absolute right-4 top-3 cursor-pointer text-indigo-600"
+    >
+      {show ? <FaEyeSlash /> : <FaEye />}
+    </span>
+  </div>
+);
 
 export default AdminProfile;

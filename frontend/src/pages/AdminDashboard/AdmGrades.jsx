@@ -8,8 +8,9 @@ import {
   FaEnvelope,
 } from "react-icons/fa";
 import AdminNavbar from "../../components/layouts/AdminNavbar";
-import "../../index.css";
-import "../../admin.css"; // External admin CSS
+
+import "../../admin.css";
+
 
 const DEFAULT_GRADES = [
   "Grade 6",
@@ -174,6 +175,7 @@ const AdmGrades = () => {
   const totalGrades = grades.length;
 
   return (
+    
     <div className="min-h-screen flex flex-col app-background">
       {/* Navbar */}
       <header ref={navbarRef} className="w-full fixed top-0 left-0 z-50">
@@ -420,6 +422,7 @@ const AdmGrades = () => {
         </div>
       </main>
     </div>
+    
   );
 };
 

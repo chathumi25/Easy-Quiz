@@ -2,26 +2,46 @@ export const BASE_URL = "http://localhost:8000";
 
 export const API_PATHS = {
   AUTH: {
-    LOGIN: "/api/v1/auth/login",
-    REGISTER: "/api/v1/auth/register",
-    GET_USER_INFO: "/api/v1/auth/getUser",
+    REGISTER: "/api/auth/register",
+    ADMIN_REGISTER: "/api/auth/admin-register",
+    LOGIN: "/api/auth/login",
+    ME: "/api/auth/me",
   },
-  DASHBOARD: {
-    GET_DATA: "/api/v1/dashboard",
+
+  // -------------------------
+  // STUDENT ROUTES
+  // -------------------------
+  STUDENT: {
+    DASHBOARD: "/api/std/dashboard",
+    GRADES: "/api/std/grades",
+    PROGRESS: "/api/std/progress",
+    SUBJECTS: "/api/std/subjects",
+    QUIZ: "/api/std/quiz",
+    PROFILE: "/api/std/profile",
+
+    UPDATE_IMAGE: "/api/std/profile/update-image",
+    REMOVE_IMAGE: "/api/std/profile/remove-image",
   },
-  INCOME: {
-    ADD_INCOME: "/api/v1/income/add",
-    GET_ALL_INCOME: "/api/v1/income/get",
-    DELETE_INCOME: (incomeId) => `/api/v1/income/${incomeId}`,
-    DOWNLOAD_INCOME: "/api/v1/income/downloadexcel",
+
+  // -------------------------
+  // ADMIN ROUTES
+  // -------------------------
+  ADMIN: {
+    DASHBOARD: "/api/adm/dashboard",
+    GRADES: "/api/adm/grades",
+    SUBJECTS: "/api/adm/subjects",
+    QUIZ: "/api/adm/quiz",
+    PROFILE: "/api/adm/profile",   // GET PROFILE
+
+    UPDATE: "/api/adm/profile/update", // UPDATE NAME + IMAGE
+    CHANGE_PASSWORD: "/api/adm/profile/change-password",
+    DELETE_ACCOUNT: "/api/adm/profile/delete-account",
+
+    UPDATE_IMAGE: "/api/adm/profile/update-image",
+    REMOVE_IMAGE: "/api/adm/profile/remove-image",
   },
-  EXPENSE: {
-    ADD_EXPENSE: "/api/v1/expense/add",
-    GET_ALL_EXPENSE: "/api/v1/expense/get",
-    DELETE_EXPENSE: (expenseId) => `/api/v1/expense/${expenseId}`,
-    DOWNLOAD_EXPENSE: "/api/v1/expense/downloadexcel",
-  },
+
   IMAGE: {
-    UPLOAD_IMAGE: "/api/v1/auth/upload-image",
+    UPLOAD_IMAGE: "/api/auth/upload-image",
   },
 };
