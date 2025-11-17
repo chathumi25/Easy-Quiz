@@ -1,10 +1,13 @@
+/* student.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-@theme {
+/* Theme variable */
+:root {
   --font-sans: 'Inter', sans-serif;
 }
-/* student.css */
+
+/* General cards / buttons */
 .progress-card {
   transition: all 0.3s ease;
 }
@@ -28,6 +31,7 @@
   }
 }
 
+/* Motivational card glow */
 .motivational-card {
   animation: pulseGlow 3s infinite ease-in-out;
 }
@@ -44,51 +48,35 @@
   }
 }
 
-/* student.css */
-
+/* Student card styles (used by various student dashboard/profile cards) */
 .student-card {
   background: linear-gradient(135deg, #fdfbff, #f3f4ff);
   border: 1px solid rgba(99, 102, 241, 0.1);
   transition: all 0.3s ease-in-out;
 }
+
 .student-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(79, 70, 229, 0.15);
 }
 
+/* Button hover */
 button {
   transition: all 0.2s ease-in-out;
 }
-button:hover {
-  transform: scale(1.05);
-}
-/* student.css */
 
-.student-card {
-  background: linear-gradient(135deg, #fdfbff, #f3f4ff);
-  border: 1px solid rgba(99, 102, 241, 0.1);
-  transition: all 0.3s ease-in-out;
-}
-.student-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.15);
-}
-
-button {
-  transition: all 0.2s ease-in-out;
-}
 button:hover {
   transform: scale(1.05);
 }
 
-/* Recently learned section cards */
+/* Recently learned / small cards */
 .recent-card {
   background: linear-gradient(120deg, #f8faff, #eef2ff);
   border: 1px solid rgba(79, 70, 229, 0.15);
   transition: all 0.3s ease-in-out;
 }
+
 .recent-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 25px rgba(79, 70, 229, 0.2);
 }
-

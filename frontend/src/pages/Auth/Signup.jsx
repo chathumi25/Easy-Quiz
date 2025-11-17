@@ -4,26 +4,36 @@ import axios from "axios";
 import AuthLayout from "../../components/layouts/AuthLayout";
 import { BASE_URL, API_PATHS } from "../../utils/apiPaths";
 import { validateEmail } from "../../utils/helper";
-import { FaCamera, FaEye, FaEyeSlash } from "react-icons/fa"; // ✅ Icons
+import {
+  FaCamera,
+  FaEye,
+  FaEyeSlash,
+  FaUserShield,
+  FaUserGraduate,
+} from "react-icons/fa";
 
 const Signup = () => {
+  const [activeTab, setActiveTab] = useState("student");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [preview, setPreview] = useState(null);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
+    grade: "",
+    adminKey: "",
     profileImage: null,
   });
-  const [preview, setPreview] = useState(null);
-  const [showPassword, setShowPassword] = useState(false); // ✅ Password toggle
-  const [error, setError] = useState("");
+
   const navigate = useNavigate();
 
-  // Handle text input changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle image upload + preview
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -32,31 +42,83 @@ const Signup = () => {
     }
   };
 
-  // Submit signup
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!validateEmail(formData.email)) return setError("Enter a valid email.");
-    if (!formData.password || formData.password.length < 6)
-      return setError("Password must be at least 6 characters long.");
+    if (!validateEmail(formData.email))
+      return setError("Enter a valid email.");
+    if (formData.password.length < 6)
+      return setError("Password must be at least 6 characters.");
+    if (formData.password !== formData.confirmPassword)
+      return setError("Passwords do not match.");
+
+    if (activeTab === "admin" && !formData.adminKey)
+      return setError("Admin security key required!");
+
+    // ⭐ Grade validation
+    if (activeTab === "student") {
+      if (!formData.grade)
+        return setError("Please select your grade.");
+
+      const validGrades = ["Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11"];
+      if (!validGrades.includes(formData.grade))
+        return setError("Invalid grade selected.");
+    }
 
     try {
       const data = new FormData();
       data.append("name", formData.name);
       data.append("email", formData.email);
       data.append("password", formData.password);
-      if (formData.profileImage) data.append("profileImage", formData.profileImage);
 
-      const response = await axios.post(
-        `${BASE_URL}${API_PATHS.AUTH.REGISTER}`,
-        data,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+      if (activeTab === "student") {
+        data.append("grade", formData.grade);
+      }
 
-      if (response.data.success) navigate("/login");
+      if (formData.profileImage) {
+        data.append("profileImage", formData.profileImage);
+      }
+
+      let apiPath = API_PATHS.AUTH.REGISTER;
+
+      if (activeTab === "admin") {
+        data.append("adminKey", formData.adminKey);
+        apiPath = API_PATHS.AUTH.ADMIN_REGISTER;
+      }
+
+      const res = await axios.post(`${BASE_URL}${apiPath}`, data);
+
+      if (!res.data.success) {
+        return setError("Signup failed.");
+      }
+
+      const loginRes = await axios.post(`${BASE_URL}${API_PATHS.AUTH.LOGIN}`, {
+        email: formData.email,
+        password: formData.password,
+      });
+
+      const { token, user } = loginRes.data;
+
+      if (!token || !user) return setError("Login failed.");
+
+      let finalImage = user.profileImage;
+      if (finalImage?.startsWith("/uploads")) {
+        finalImage = BASE_URL + finalImage;
+      }
+
+      const updatedUser = {
+        ...user,
+        profileImage: finalImage,
+      };
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      localStorage.setItem("role", user.role);
+
+      window.dispatchEvent(new Event("user-updated"));
+
+      navigate(user.role === "admin" ? "/admindashboard" : "/studentdashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Signup failed. Try again.");
     }
@@ -64,33 +126,52 @@ const Signup = () => {
 
   return (
     <AuthLayout>
-      <div className="w-full sm:w-[800px] bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl border border-blue-100 p-10 flex flex-col justify-center mx-auto hover:shadow-blue-300 transition-all duration-500">
-        <h2 className="text-3xl font-bold text-center text-indigo-700 mb-1">
+      <div className="w-full sm:w-[800px] bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl border border-blue-100 p-10 mx-auto flex flex-col transition-all duration-500">
+
+        <h2 className="text-3xl font-bold text-center text-indigo-700 mb-6">
           Create Your Account
         </h2>
 
-        <form onSubmit={handleSignup} className="space-y-4">
-          {/* Profile Image Upload Section */}
-          <div className="flex flex-col items-center mb-2">
-            <div className="relative flex flex-col items-center">
-              {/* Image Preview Circle */}
-              <div className="w-28 h-28 rounded-full border-4 border-indigo-200 shadow-md overflow-hidden flex items-center justify-center bg-gray-100 hover:shadow-lg transition-all duration-300">
+        <div className="flex justify-center gap-6 mb-8">
+          <button
+            onClick={() => setActiveTab("student")}
+            className={`px-6 py-2 rounded-xl border ${
+              activeTab === "student"
+                ? "bg-indigo-600 text-white shadow-lg"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            } flex items-center gap-2 font-semibold`}
+          >
+            <FaUserGraduate /> Student
+          </button>
+
+          <button
+            onClick={() => setActiveTab("admin")}
+            className={`px-6 py-2 rounded-xl border ${
+              activeTab === "admin"
+                ? "bg-purple-600 text-white shadow-lg"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            } flex items-center gap-2 font-semibold`}
+          >
+            <FaUserShield /> Admin
+          </button>
+        </div>
+
+        <form onSubmit={handleSignup} className="space-y-5">
+
+          {/* IMAGE */}
+          <div className="flex flex-col items-center">
+            <div className="relative">
+              <div className="w-28 h-28 rounded-full border-4 border-indigo-200 shadow-md overflow-hidden bg-gray-100 flex items-center justify-center">
                 {preview ? (
-                  <img
-                    src={preview}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={preview} className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-gray-400 text-xs">No Image</span>
                 )}
               </div>
 
-              {/* Upload Icon Button */}
               <label
                 htmlFor="profileImage"
                 className="absolute bottom-1 right-1 bg-gradient-to-r from-indigo-600 to-purple-600 p-3 rounded-full cursor-pointer shadow-lg hover:scale-110 transition"
-                title="Upload Profile Image"
               >
                 <FaCamera className="text-white text-sm" />
               </label>
@@ -99,88 +180,120 @@ const Signup = () => {
                 id="profileImage"
                 type="file"
                 accept="image/*"
-                onChange={handleImageChange}
                 className="hidden"
+                onChange={handleImageChange}
               />
             </div>
           </div>
 
-          {/* Full Name */}
+          {/* NAME */}
           <div>
-            <label className="mb-1 text-gray-700 font-medium text-sm">Full Name</label>
+            <label className="text-sm font-medium text-gray-700">
+              Full Name
+            </label>
             <input
               type="text"
               name="name"
+              placeholder="John Doe"
               value={formData.name}
               onChange={handleChange}
-              placeholder="John Doe"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 text-sm"
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 text-sm"
             />
           </div>
 
-          {/* Email */}
+          {/* EMAIL */}
           <div>
-            <label className="mb-1 text-gray-700 font-medium text-sm">Email</label>
+            <label className="text-sm font-medium text-gray-700">
+              Email
+            </label>
             <input
               type="text"
               name="email"
+              placeholder="user@example.com"
               value={formData.email}
               onChange={handleChange}
-              placeholder="user@example.com"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 text-sm"
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 text-sm"
             />
           </div>
 
-          {/* Password with Eye Toggle */}
-          <div className="flex flex-col relative">
-            <label className="mb-1 text-gray-700 font-medium text-sm">Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="********"
-                className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                title={showPassword ? "Hide password" : "Show password"}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-indigo-600 focus:outline-none"
-              >
-                {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-              </button>
-            </div>
+          {/* PASSWORD */}
+          <div className="relative">
+            <label className="text-sm font-medium text-gray-700">Password</label>
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="********"
+              value={formData.password}
+              onChange={handleChange}
+              className="w-full px-4 py-2 pr-12 border rounded-lg focus:ring-2 focus:ring-indigo-400 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-9 text-gray-500"
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
           </div>
 
-           {/* Confirm Password with Eye Toggle */}
-          <div className="flex flex-col relative">
-            <label className="mb-1 text-gray-700 font-medium text-sm">Confirm Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="********"
-                className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                title={showPassword ? "Hide password" : "Show password"}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-indigo-600 focus:outline-none"
-              >
-                {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-              </button>
-            </div>
+          {/* CONFIRM PASSWORD */}
+          <div className="relative">
+            <label className="text-sm font-medium text-gray-700">
+              Confirm Password
+            </label>
+            <input
+              type={showPassword ? "text" : "password"}
+              name="confirmPassword"
+              placeholder="********"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className="w-full px-4 py-2 pr-12 border rounded-lg focus:ring-2 focus:ring-indigo-400 text-sm"
+            />
           </div>
 
-          {/* Error Message */}
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          {/* ⭐ STUDENT GRADE FIELD (Dropdown + Validation) */}
+          {activeTab === "student" && (
+            <div>
+              <label className="text-sm font-medium text-gray-700">Grade</label>
+              <select
+                name="grade"
+                value={formData.grade}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 text-sm"
+              >
+                <option value="">-- Select Grade --</option>
 
-          {/* Submit */}
+                {/* Grades 6 - 11 */}
+                {[6, 7, 8, 9, 10, 11].map((g) => (
+                  <option key={g} value={`Grade ${g}`}>
+                    Grade {g}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* ADMIN KEY */}
+          {activeTab === "admin" && (
+            <div className="relative">
+              <label className="text-sm font-medium text-gray-700">
+                Admin Security Key
+              </label>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="adminKey"
+                placeholder="Enter Admin Secret Code"
+                value={formData.adminKey}
+                onChange={handleChange}
+                className="w-full px-4 py-2 pr-12 border rounded-lg focus:ring-2 focus:ring-purple-400 text-sm"
+              />
+            </div>
+          )}
+
+          {error && (
+            <p className="text-red-500 text-center text-sm">{error}</p>
+          )}
+
           <button
             type="submit"
             className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:scale-105 transition"
@@ -189,13 +302,9 @@ const Signup = () => {
           </button>
         </form>
 
-        {/* Redirect */}
         <p className="text-sm text-gray-700 mt-4 text-center">
           Already have an account?{" "}
-          <Link
-            to="/login"
-            className="text-blue-600 font-medium hover:underline"
-          >
+          <Link to="/login" className="text-blue-600 hover:underline">
             Login
           </Link>
         </p>
