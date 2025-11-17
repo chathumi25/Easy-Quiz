@@ -15,12 +15,11 @@ import {
 } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
 import { BASE_URL } from "../../utils/apiPaths";
+import axios from "../../utils/axiosInstance";
 import { UserContext } from "../../context/userContext";
 
 const AdminNavbar = () => {
-
-  // ⭐ FIX: Get user from Context instead of localStorage
-  const { user, updateUser } = useContext(UserContext);
+  const { user, setUser } = useContext(UserContext);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,18 +31,15 @@ const AdminNavbar = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // ⭐ FIX: Update navbar instantly when user changes
+  // Load user image
   useEffect(() => {
     if (!user) return;
 
     let img = user.profileImage;
-
-    if (img?.startsWith("/uploads")) {
-      img = BASE_URL + img;
-    }
+    if (img?.startsWith("/uploads")) img = BASE_URL + img;
 
     setProfileImage(img || "");
-  }, [user]);  // 👈 this is the instant update trigger
+  }, [user]);
 
   const getInitial = (name) =>
     name && name.length > 0 ? name[0].toUpperCase() : "A";
@@ -55,19 +51,29 @@ const AdminNavbar = () => {
 
   const handleLogout = () => {
     localStorage.clear();
-    updateUser(null);
-    navigate("/login");
+    setUser(null);
+    navigate("/login", { replace: true });
   };
 
-  const confirmRemovePicture = () => {
-    const updated = { ...user, profileImage: "" };
-    updateUser(updated);
-    setProfileImage("");
-    setShowConfirmDelete(false);
-    setDropdownOpen(false);
+  // ⭐ Backend remove image + context update
+  const confirmRemovePicture = async () => {
+    try {
+      const res = await axios.delete("/api/adm/profile/remove-image");
+
+      if (res.data.success) {
+        const updated = { ...user, profileImage: "" };
+        localStorage.setItem("user", JSON.stringify(updated));
+        setUser(updated);
+        setProfileImage("");
+      }
+
+      setShowConfirmDelete(false);
+      setDropdownOpen(false);
+    } catch (err) {
+      console.error("Remove image failed:", err);
+    }
   };
 
-  // Detect screen size + click outside dropdown
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
     handleResize();
@@ -78,8 +84,8 @@ const AdminNavbar = () => {
         setDropdownOpen(false);
       }
     };
-
     document.addEventListener("mousedown", clickOutside);
+
     return () => {
       window.removeEventListener("resize", handleResize);
       document.removeEventListener("mousedown", clickOutside);
@@ -106,7 +112,7 @@ const AdminNavbar = () => {
         {/* DESKTOP MENU */}
         <div className="hidden md:flex items-center gap-6 ml-auto">
 
-          {/* Menu Buttons */}
+          {/* MAIN MENU BUTTONS */}
           <div className="flex gap-3 items-center">
             {menuItems.map((item, index) => (
               <button
@@ -116,17 +122,17 @@ const AdminNavbar = () => {
                   location.pathname === item.path
                     ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
                     : "bg-white/70 text-indigo-800 hover:bg-indigo-100"
-                }`}>
+                }`}
+              >
                 {item.icon}
                 {item.label}
               </button>
             ))}
           </div>
 
-          {/* RIGHT SIDE PROFILE + STATS */}
+          {/* ⭐⭐ SUMMARY CARDS (ADDED BACK) ⭐⭐ */}
           <div className="flex gap-3 ml-4">
 
-            {/* USERS COUNT CARD */}
             <div className="bg-white/80 px-3 py-2 rounded-xl flex items-center gap-2 shadow">
               <FaUsers className="text-blue-700" />
               <div>
@@ -135,7 +141,6 @@ const AdminNavbar = () => {
               </div>
             </div>
 
-            {/* SUBJECTS CARD */}
             <div className="bg-white/80 px-3 py-2 rounded-xl flex items-center gap-2 shadow">
               <FaBook className="text-yellow-700" />
               <div>
@@ -144,7 +149,6 @@ const AdminNavbar = () => {
               </div>
             </div>
 
-            {/* QUIZZES CARD */}
             <div className="bg-white/80 px-3 py-2 rounded-xl flex items-center gap-2 shadow">
               <FaQuestionCircle className="text-pink-700" />
               <div>
@@ -152,13 +156,16 @@ const AdminNavbar = () => {
                 <p className="font-semibold">48</p>
               </div>
             </div>
+
           </div>
+          {/* END SUMMARY CARDS */}
 
           {/* PROFILE DROPDOWN */}
           <div className="relative ml-4" ref={dropdownRef}>
-            <div className="flex items-center gap-2 cursor-pointer"
-                 onClick={() => setDropdownOpen(!dropdownOpen)}>
-
+            <div
+              className="flex items-center gap-2 cursor-pointer"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+            >
               {profileImage ? (
                 <img
                   src={profileImage}
@@ -180,34 +187,39 @@ const AdminNavbar = () => {
 
                 <button
                   onClick={() => navigate("/adminprofile")}
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 w-full text-left">
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 w-full text-left"
+                >
                   <FaUserEdit className="text-indigo-600" />
                   Update Profile
                 </button>
 
                 <button
                   onClick={() => setShowConfirmDelete(true)}
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 w-full text-left">
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 w-full text-left"
+                >
                   <FaTrash className="text-red-600" />
                   Remove Picture
                 </button>
 
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 w-full text-left text-red-600 font-medium">
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 w-full text-left text-red-600 font-medium"
+                >
                   <FaSignOutAlt />
                   Logout
                 </button>
+
               </div>
             )}
           </div>
         </div>
 
-        {/* MOBILE MENU BUTTON */}
+        {/* MOBILE MENU */}
         {isMobile && (
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 text-indigo-800 rounded-full hover:bg-indigo-100">
+            className="p-2 text-indigo-800 rounded-full hover:bg-indigo-100"
+          >
             {isMenuOpen ? <FaTimes size={22} /> : <FaBars size={22} />}
           </button>
         )}

@@ -16,17 +16,23 @@
 }
 
 /*  Global gradient background for entire app */
+
 .app-background {
-  margin: 0;
-  padding: 0;
-  font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg,
-    rgb(210, 221, 246) 0%,
-    rgba(192, 205, 245, 0.95) 50%,
-    rgb(237, 223, 251) 100%);
-  background-attachment: fixed; /* keeps gradient steady on scroll */
-  background-repeat: no-repeat;
+ background: linear-gradient(135deg,
+  rgba(245, 248, 255, 1) 0%,     /* white-blue */
+  rgba(225, 230, 255, 0.95) 30%, /* pale blue-lilac */
+  rgba(210, 215, 255, 0.92) 60%, /* misty lavender */
+  rgba(210, 180, 255, 0.95) 100% /* purple glow */
+);
+
+
+
+
+  background-attachment: fixed;
   background-size: cover;
+  background-repeat: no-repeat;
   min-height: 100vh;
   color: #1e1e2f;
-};
+  overflow-x: hidden;
+  position: relative;
+}

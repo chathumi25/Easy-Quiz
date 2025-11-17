@@ -14,13 +14,12 @@ import { UserContext } from "../../context/userContext";
 import "../../admin.css";
 
 const AdminProfile = () => {
-  // ⭐ USE CONTEXT
-  const { user: storedUser, updateUser } = useContext(UserContext);
+  // ⭐ USE THE CORRECT CONTEXT FUNCTION
+  const { user: storedUser, setUser } = useContext(UserContext);
 
   const [name, setName] = useState(storedUser?.name || "");
   const [email] = useState(storedUser?.email || "");
   const [role] = useState(storedUser?.role || "");
-
   const [tempImage, setTempImage] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
 
@@ -46,20 +45,16 @@ const AdminProfile = () => {
   const fileInputRef = useRef(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // ⭐ FIX: Sync image with context
+  // ⭐ SYNC IMAGE
   useEffect(() => {
     if (!storedUser) return;
 
     let img = storedUser.profileImage;
-
-    if (img?.startsWith("/uploads")) {
-      img = BASE_URL + img;
-    }
+    if (img?.startsWith("/uploads")) img = BASE_URL + img;
 
     setTempImage(img || "");
   }, [storedUser]);
 
-  // NAVBAR HEIGHT
   useEffect(() => {
     const updateHeight = () => {
       if (navbarRef.current)
@@ -77,8 +72,7 @@ const AdminProfile = () => {
     const file = e.target.files[0];
     if (file) {
       setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setTempImage(url);
+      setTempImage(URL.createObjectURL(file));
     }
   };
 
@@ -101,7 +95,7 @@ const AdminProfile = () => {
           ? `${BASE_URL}${updatedUser.profileImage}`
           : "";
 
-        updateUser({
+        setUser({
           ...storedUser,
           name: updatedUser.name,
           profileImage: updatedUser.profileImage,
@@ -113,16 +107,13 @@ const AdminProfile = () => {
         setMessage("❌ Update failed.");
       }
     } catch (err) {
-      console.error(err);
-      setMessage(
-        "❌ Update failed: " + (err.response?.data?.message || "")
-      );
+      setMessage("❌ Update failed");
     }
 
     setTimeout(() => setMessage(""), 3000);
   };
 
-  // ⭐ FIXED: CHANGE PASSWORD (uses adminKey field)
+  // ⭐ CHANGE PASSWORD
   const handleChangePassword = async () => {
     const { adminKey, current, new: newPass, confirm } = passwords;
 
@@ -132,47 +123,45 @@ const AdminProfile = () => {
     }
 
     if (newPass !== confirm) {
-      setPassMessage("❌ New passwords do not match.");
+      setPassMessage("❌ Passwords do not match.");
       return;
     }
 
     try {
       const res = await axios.put("/api/adm/profile/change-password", {
-        adminKey: adminKey,
+        adminKey,
         currentPassword: current,
         newPassword: newPass,
       });
 
       if (res.data.success) {
-        setPassMessage("✅ Password updated successfully!");
+        setPassMessage("True! Password updated.");
         setPasswords({ adminKey: "", current: "", new: "", confirm: "" });
       } else {
-        setPassMessage("❌ Password update failed.");
+        setPassMessage("❌ Failed to update password.");
       }
     } catch (err) {
-      setPassMessage(
-        "❌ Error: " + (err.response?.data?.message || "")
-      );
+      setPassMessage("❌ Error updating password.");
     }
 
     setTimeout(() => setPassMessage(""), 3000);
   };
 
-  // DELETE ACCOUNT
+  // ⭐ DELETE ACCOUNT
   const confirmDelete = async () => {
     try {
       const res = await axios.delete("/api/adm/profile/delete-account");
 
       if (res.data.success) {
         localStorage.clear();
+        setUser(null);
         window.location.href = "/login";
       }
-    } catch (err) {
+    } catch {
       alert("Error deleting account");
     }
   };
 
-  // UI
   return (
     <div className="min-h-screen flex flex-col app-background">
       <header ref={navbarRef} className="w-full fixed top-0 left-0 z-50">
@@ -184,7 +173,6 @@ const AdminProfile = () => {
         style={{ marginTop: `${navbarHeight + 120}px` }}
       >
         <div className="max-w-6xl mx-auto space-y-10">
-
           {/* HEADER */}
           <div className="text-center animate-fadeIn">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-700 to-purple-800 bg-clip-text text-transparent">
@@ -212,7 +200,7 @@ const AdminProfile = () => {
               {/* IMAGE */}
               <div className="relative w-40 h-40 rounded-full overflow-hidden border-4 border-indigo-300 shadow-xl">
                 {tempImage ? (
-                  <img src={tempImage} alt="Profile" className="w-full h-full object-cover" />
+                  <img src={tempImage} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-indigo-500 text-white flex items-center justify-center text-5xl font-bold">
                     {getInitial(name)}
@@ -283,7 +271,6 @@ const AdminProfile = () => {
               </div>
             )}
 
-            {/* ⭐ ADDED ADMIN KEY INPUT FIELD */}
             <PasswordField
               label="Admin Security Key"
               value={passwords.adminKey}
@@ -360,11 +347,9 @@ const AdminProfile = () => {
               About Admin Role
             </h2>
             <p className="text-gray-700 leading-relaxed">
-              As an EasyQuiz administrator, you hold complete authority over the system.
-              You can manage users, grades, subjects, quiz banks, evaluations, and track
-              platform-wide academic performance. Admins ensure the learning environment
-              stays secure, organized, and efficient providing students and teachers
-              the best experience possible.
+              As an EasyQuiz administrator, you have full control over the platform…
+              You manage quizzes, subjects, grades, analytics, and ensure the 
+              system works smoothly for all students.
             </p>
           </div>
 

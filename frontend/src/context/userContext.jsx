@@ -3,6 +3,8 @@ import { createContext, useState, useEffect } from "react";
 export const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
+
+  // ⭐ Load user from localStorage safely
   const [user, setUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("user")) || null;
@@ -11,7 +13,7 @@ export const UserProvider = ({ children }) => {
     }
   });
 
-  // Sync user from localStorage
+  // ⭐ Sync function (React + all tabs)
   const syncUser = () => {
     try {
       const saved = JSON.parse(localStorage.getItem("user"));
@@ -21,7 +23,7 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Listen for user-updated + other tab changes
+  // ⭐ Listen to custom "user-updated" event + tab changes
   useEffect(() => {
     window.addEventListener("user-updated", syncUser);
     window.addEventListener("storage", syncUser);
@@ -32,14 +34,17 @@ export const UserProvider = ({ children }) => {
     };
   }, []);
 
+  // ⭐ Main function to update user everywhere
   const updateUser = (data) => {
     localStorage.setItem("user", JSON.stringify(data));
     setUser(data);
+
+    // Trigger navbar update in all components
     window.dispatchEvent(new Event("user-updated"));
   };
 
   return (
-    <UserContext.Provider value={{ user, updateUser }}>
+    <UserContext.Provider value={{ user, setUser: updateUser }}>
       {children}
     </UserContext.Provider>
   );

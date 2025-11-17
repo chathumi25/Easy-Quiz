@@ -12,16 +12,19 @@ export const API_PATHS = {
   // STUDENT ROUTES
   // -------------------------
   STUDENT: {
-    DASHBOARD: "/api/std/dashboard",
-    GRADES: "/api/std/grades",
-    PROGRESS: "/api/std/progress",
-    SUBJECTS: "/api/std/subjects",
-    QUIZ: "/api/std/quiz",
-    PROFILE: "/api/std/profile",
+  PROFILE: "/api/std/profile",
+  UPDATE: "/api/std/profile/update",
+  UPDATE_IMAGE: "/api/std/profile/update-image",
+  REMOVE_IMAGE: "/api/std/profile/remove-image",
+  CHANGE_PASSWORD: "/api/std/profile/change-password",
+  DELETE_ACCOUNT: "/api/std/profile/delete-account",
 
-    UPDATE_IMAGE: "/api/std/profile/update-image",
-    REMOVE_IMAGE: "/api/std/profile/remove-image",
-  },
+  DASHBOARD: "/api/std/dashboard",
+  GRADES: "/api/std/grades",
+  PROGRESS: "/api/std/progress",
+  SUBJECTS: "/api/std/subjects",
+  QUIZ: "/api/std/quiz",
+},
 
   // -------------------------
   // ADMIN ROUTES
