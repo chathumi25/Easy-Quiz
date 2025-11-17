@@ -13,7 +13,6 @@ const storage = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: function (req, file, cb) {
-    // preserve extension
     const ext = path.extname(file.originalname);
     const name = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
     cb(null, name);
@@ -21,22 +20,22 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// GET /api/adm/profile
+// GET admin profile
 router.get('/', auth, adminOnly, adminProfileController.getAdminProfile);
 
-// PUT /api/adm/profile/update  (form-data: name, profileImage optional)
+// UPDATE name + image (optional)
 router.put('/update', auth, adminOnly, upload.single('profileImage'), adminProfileController.updateAdminProfile);
 
-// PUT /api/adm/profile/update-image (form-data: profileImage)
+// UPDATE only image
 router.put('/update-image', auth, adminOnly, upload.single('profileImage'), adminProfileController.updateProfileImage);
 
-// PUT /api/adm/profile/remove-image
-router.put('/remove-image', auth, adminOnly, adminProfileController.removeProfileImage);
+// ✅ FIX: REMOVE IMAGE SHOULD BE DELETE NOT PUT
+router.delete('/remove-image', auth, adminOnly, adminProfileController.removeProfileImage);
 
-// PUT /api/adm/profile/change-password
+// CHANGE PASSWORD
 router.put('/change-password', auth, adminOnly, adminProfileController.changeAdminPassword);
 
-// DELETE /api/adm/profile/delete-account
+// DELETE ACCOUNT
 router.delete('/delete-account', auth, adminOnly, adminProfileController.deleteAdminAccount);
 
 module.exports = router;

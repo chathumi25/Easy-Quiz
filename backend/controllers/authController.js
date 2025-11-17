@@ -5,7 +5,6 @@ const jwt = require("jsonwebtoken");
 const Admin = require("../models/Admin");
 const Student = require("../models/Student");
 
-// Create JWT
 const generateToken = (user) => {
   return jwt.sign(
     { id: user._id, role: user.role },
@@ -14,22 +13,25 @@ const generateToken = (user) => {
   );
 };
 
-// REGISTER USER (ADMIN + STUDENT)
+// REGISTER USER
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password, adminKey } = req.body;
+    const { name, email, password, adminKey, grade } = req.body;
 
-    // validate fields
     if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: "All fields are required" });
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
     }
 
     let role = "student";
 
-    // admin signup
     if (adminKey) {
       if (adminKey !== process.env.ADMIN_KEY) {
-        return res.status(401).json({ success: false, message: "Invalid admin key" });
+        return res
+          .status(401)
+          .json({ success: false, message: "Invalid admin key" });
       }
       role = "admin";
     }
@@ -38,28 +40,37 @@ exports.registerUser = async (req, res) => {
 
     const exists = await model.findOne({ email });
     if (exists) {
-      return res.status(400).json({ success: false, message: "Email already registered" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email already registered" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const profileImage = req.file ? `/uploads/${req.file.filename}` : "";
 
-    const newUser = await model.create({
+    const newUser = {
       name,
       email,
       password: hashedPassword,
       role,
       profileImage,
-    });
+    };
+
+    if (role === "student") {
+      newUser.grade = grade || "";
+    }
+
+    await model.create(newUser);
 
     return res.status(201).json({
       success: true,
       message: `${role} registered successfully`,
     });
-
   } catch (error) {
     console.error("Register Error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error" });
   }
 };
 
@@ -67,9 +78,6 @@ exports.registerUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    if (!email || !password)
-      return res.status(400).json({ success: false, message: "Missing fields" });
 
     let user = await Admin.findOne({ email });
     let role = "admin";
@@ -79,16 +87,24 @@ exports.loginUser = async (req, res) => {
       role = "student";
     }
 
-    if (!user)
-      return res.status(400).json({ success: false, message: "Invalid email or user not found" });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
     const matched = await bcrypt.compare(password, user.password);
-    if (!matched)
-      return res.status(400).json({ success: false, message: "Incorrect password" });
+    if (!matched) {
+      return res.status(400).json({
+        success: false,
+        message: "Incorrect password",
+      });
+    }
 
     const token = generateToken(user);
 
-    res.json({
+    return res.json({
       success: true,
       message: `${role} login successful`,
       token,
@@ -98,11 +114,13 @@ exports.loginUser = async (req, res) => {
         email: user.email,
         role: user.role,
         profileImage: user.profileImage,
+        grade: user.grade || "",
       },
     });
-
   } catch (error) {
     console.error("Login Error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error" });
   }
 };

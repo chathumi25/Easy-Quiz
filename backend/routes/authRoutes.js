@@ -2,20 +2,14 @@
 const express = require("express");
 const router = express.Router();
 const upload = require("../middlewere/upload");
-const auth = require("../middlewere/auth");
+const { auth } = require("../middlewere/authMiddleware");
 
 const { registerUser, loginUser } = require("../controllers/authController");
 
-// Student Register (form-data)
 router.post("/register", upload.single("profileImage"), registerUser);
-
-// Admin Register (form-data)
 router.post("/admin-register", upload.single("profileImage"), registerUser);
-
-// Login
 router.post("/login", loginUser);
 
-// Get logged user
 router.get("/me", auth, async (req, res) => {
   try {
     const Admin = require("../models/Admin");
@@ -36,11 +30,14 @@ router.get("/me", auth, async (req, res) => {
         email: user.email,
         role: user.role,
         profileImage: user.profileImage,
+        grade: user.grade || "",
       },
     });
   } catch (error) {
-    console.error("Error in /auth/me:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 });
 
