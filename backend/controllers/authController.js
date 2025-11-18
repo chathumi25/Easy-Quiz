@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 
 const Admin = require("../models/Admin");
 const Student = require("../models/Student");
+const Grade = require("../models/Grade");
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -29,48 +30,62 @@ exports.registerUser = async (req, res) => {
 
     if (adminKey) {
       if (adminKey !== process.env.ADMIN_KEY) {
-        return res
-          .status(401)
-          .json({ success: false, message: "Invalid admin key" });
+        return res.status(401).json({
+          success: false,
+          message: "Invalid admin key",
+        });
       }
       role = "admin";
     }
 
     const model = role === "admin" ? Admin : Student;
-
     const exists = await model.findOne({ email });
+
     if (exists) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Email already registered" });
+      return res.status(400).json({
+        success: false,
+        message: "Email already registered",
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const profileImage = req.file ? `/uploads/${req.file.filename}` : "";
 
-    const newUser = {
+    const newUser = await model.create({
       name,
       email,
       password: hashedPassword,
       role,
       profileImage,
-    };
+      grade: role === "student" ? grade : undefined,
+    });
 
-    if (role === "student") {
-      newUser.grade = grade || "";
+    // ⭐ Insert student into grade
+    if (role === "student" && grade) {
+      const gradeDoc = await Grade.findOne({ name: grade });
+
+      if (gradeDoc) {
+        gradeDoc.students.push({
+          studentId: newUser._id.toString(),
+          name,
+          email,
+          registeredAt: new Date().toISOString(),
+        });
+        await gradeDoc.save();
+      }
     }
-
-    await model.create(newUser);
 
     return res.status(201).json({
       success: true,
       message: `${role} registered successfully`,
     });
+
   } catch (error) {
     console.error("Register Error:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -117,10 +132,12 @@ exports.loginUser = async (req, res) => {
         grade: user.grade || "",
       },
     });
+
   } catch (error) {
     console.error("Login Error:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
