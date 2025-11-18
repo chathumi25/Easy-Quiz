@@ -245,3 +245,67 @@ background: linear-gradient(135deg,
   color: #1e1e2f;
 }
 
+.panel {
+  @apply bg-white/80 p-8 rounded-2xl shadow-lg border border-indigo-100;
+}
+
+.grade-item {
+  @apply p-4 bg-white rounded-xl flex justify-between items-center shadow transition;
+}
+.selected-grade {
+  @apply bg-indigo-50 border border-indigo-200;
+}
+
+.grade-circle {
+  @apply w-12 h-12 bg-indigo-100 text-indigo-700 font-bold rounded-full flex items-center justify-center shadow;
+}
+
+.grade-name {
+  @apply font-semibold text-indigo-800 text-lg;
+}
+
+.grade-count {
+  @apply text-xs text-gray-500;
+}
+
+.icon-btn {
+  @apply p-2 text-white rounded-lg shadow hover:opacity-90;
+}
+
+.student-item {
+  @apply flex justify-between items-center p-5 bg-white border rounded-xl shadow-sm;
+}
+
+.student-name {
+  @apply text-indigo-800 font-medium text-lg;
+}
+
+.student-email {
+  @apply text-gray-600 text-xs;
+}
+
+.btn-green {
+  @apply px-6 py-3 bg-green-600 text-white rounded-lg;
+}
+
+.btn-gray {
+  @apply px-6 py-3 bg-gray-300 rounded-lg;
+}
+
+.input-box {
+  @apply p-4 rounded-xl border border-indigo-300;
+}
+
+.error-box {
+  @apply mt-4 text-red-600 bg-red-100 border border-red-200 rounded-lg p-3;
+}
+
+.success-box {
+  @apply mt-4 text-green-700 bg-green-100 border border-green-200 rounded-lg p-3;
+}
+
+.dashboard-card {
+  @apply bg-white/80 p-6 rounded-2xl shadow-md border border-indigo-100;
+}
+
+

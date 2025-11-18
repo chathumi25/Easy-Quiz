@@ -36,3 +36,17 @@
   overflow-x: hidden;
   position: relative;
 }
+
+@keyframes toastSlide {
+  from {
+    opacity: 0;
+    transform: translateX(40px) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+.animate-toastSlide {
+  animation: toastSlide 0.35s ease-out;
+}
