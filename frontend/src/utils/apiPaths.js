@@ -29,27 +29,33 @@ export const API_PATHS = {
   // -------------------------
   // ADMIN ROUTES
   // -------------------------
-  ADMIN: {
+    ADMIN: {
     DASHBOARD: "/api/adm/dashboard",
 
-    // ------------------------------------
-    // ADMIN GRADE ROUTES (Added now)
-    // ------------------------------------
-     GRADES: "/api/adm/grades",
+    GRADES: "/api/adm/grades",
     ADD_GRADE: "/api/adm/grades/add",
     REMOVE_GRADE: "/api/adm/grades/remove",
     ADD_STUDENT: "/api/adm/grades/add-student",
     REMOVE_STUDENT: "/api/adm/grades/remove-student",
-    SUBJECTS: "/api/adm/subjects",
+
+    // ===== SUBJECT API =====
+    GET_SUBJECTS: "/api/adm/subjects",                 // GET ?gradeId=
+    ADD_SUBJECT: "/api/adm/subjects/add",
+    REMOVE_SUBJECT: "/api/adm/subjects/remove",
+    ADD_UNIT: "/api/adm/subjects/add-unit",
+    REMOVE_UNIT: "/api/adm/subjects/remove-unit",
+
     QUIZ: "/api/adm/quiz",
 
-    PROFILE: "/api/adm/profile",            // GET
-    UPDATE: "/api/adm/profile/update",      // PUT
+    PROFILE: "/api/adm/profile",
+    UPDATE: "/api/adm/profile/update",
     UPDATE_IMAGE: "/api/adm/profile/update-image",
     REMOVE_IMAGE: "/api/adm/profile/remove-image",
     CHANGE_PASSWORD: "/api/adm/profile/change-password",
     DELETE_ACCOUNT: "/api/adm/profile/delete-account",
-  },
+},
+
+
 
   IMAGE: {
     UPLOAD_IMAGE: "/api/auth/upload-image",

@@ -1,10 +1,15 @@
+/* FULL FIXED VERSION: UNIQUE KEYS + CONFIRM DELETE + UNIT DELETE WORKING */
 import React, { useState, useEffect, useRef } from "react";
 import { FaPlus, FaTrash, FaBookOpen, FaLayerGroup } from "react-icons/fa";
 import AdminNavbar from "../../components/layouts/AdminNavbar";
 import "../../index.css";
 import "../../admin.css";
 
-const STORAGE_KEY = "easyquiz_admin_subjects_v6";
+import axiosInstance from "../../utils/axiosInstance";
+import { API_PATHS } from "../../utils/apiPaths";
+import Alert from "../../components/layouts/Alert";
+import ConfirmModal from "../../components/layouts/ConfirmModal";
+
 const DEFAULT_GRADES = [
   "Grade 6",
   "Grade 7",
@@ -14,44 +19,47 @@ const DEFAULT_GRADES = [
   "Grade 11",
 ];
 
-// Helper to create default data
-const createDefaultData = () =>
-  DEFAULT_GRADES.map((g) => ({ grade: g, subjects: [] }));
-
 const AdmSubject = () => {
   const navbarRef = useRef(null);
   const [navbarHeight, setNavbarHeight] = useState(85);
 
-  const [subjects, setSubjects] = useState(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {
-      console.warn("Invalid stored data, resetting to defaults.", e);
-    }
-    const initial = createDefaultData();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
-    return initial;
-  });
-
-  const [selectedGrade, setSelectedGrade] = useState(() => DEFAULT_GRADES[0] || "");
+  const [subjects, setSubjects] = useState([]);
+  const [selectedGrade, setSelectedGrade] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
   const [newSubject, setNewSubject] = useState("");
   const [newUnit, setNewUnit] = useState({ name: "", content: "" });
 
-  // keep localStorage in sync
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(subjects));
-    } catch (e) {
-      console.error("Failed to save subjects to localStorage:", e);
-    }
-  }, [subjects]);
+  const [loadingGrades, setLoadingGrades] = useState(false);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [addingSubject, setAddingSubject] = useState(false);
+  const [addingUnit, setAddingUnit] = useState(false);
+  const [removingSubjectId, setRemovingSubjectId] = useState(null);
+  const [removingUnitId, setRemovingUnitId] = useState(null);
 
-  // capture navbar height
+  // ALERT
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState("success");
+
+  // CONFIRM MODAL
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmTitle, setConfirmTitle] = useState("Confirm");
+  const [confirmHandler, setConfirmHandler] = useState(() => {});
+
+  // Auto-hide alert
+  useEffect(() => {
+    if (alertMessage) {
+      const t = setTimeout(() => setAlertMessage(""), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [alertMessage]);
+
+  const currentGradeObj =
+    subjects.find((g) => String(g.gradeId) === String(selectedGrade)) || null;
+
+  const currentSubjectObj =
+    currentGradeObj?.subjects?.find((s) => s.name === selectedSubject) || null;
+
   useEffect(() => {
     const updateHeight = () => {
       if (navbarRef.current) setNavbarHeight(navbarRef.current.offsetHeight);
@@ -61,118 +69,329 @@ const AdmSubject = () => {
     return () => window.removeEventListener("resize", updateHeight);
   }, []);
 
-  // derived helpers
-  const currentGrade = subjects.find((g) => g.grade === selectedGrade) || null;
-  const currentSubject =
-    currentGrade?.subjects.find((s) => s.name === selectedSubject) || null;
-
-  // Add subject
-  const addSubject = () => {
-    if (!selectedGrade) return alert("Please select a grade first!");
-    const name = (newSubject || "").trim();
-    if (!name) return alert("Enter a subject name.");
-
-    setSubjects((prev) =>
-      prev.map((g) => {
-        if (g.grade !== selectedGrade) return g;
-        if (g.subjects.some((s) => s.name.toLowerCase() === name.toLowerCase())) {
-          alert("This subject already exists in this grade!");
-          return g;
-        }
-        return { ...g, subjects: [...g.subjects, { name, units: [] }] };
-      })
-    );
-
-    setNewSubject("");
-    setSelectedSubject(name);
-  };
-
-  // Remove subject
-  const removeSubject = (subjectName) => {
-    if (!window.confirm(`Delete ${subjectName}?`)) return;
-    setSubjects((prev) =>
-      prev.map((g) =>
-        g.grade === selectedGrade
-          ? { ...g, subjects: g.subjects.filter((s) => s.name !== subjectName) }
-          : g
-      )
-    );
-    if (selectedSubject === subjectName) setSelectedSubject("");
-  };
-
-  // Add unit
-  const addUnit = () => {
-    if (!selectedGrade || !selectedSubject)
-      return alert("Select a grade and subject before adding a unit!");
-    const name = (newUnit.name || "").trim();
-    const content = (newUnit.content || "").trim();
-    if (!name || !content) return alert("Enter both unit name and description!");
-
-    const newUnitObj = { id: Date.now(), name, content };
-
-    setSubjects((prev) =>
-      prev.map((g) =>
-        g.grade === selectedGrade
-          ? {
-              ...g,
-              subjects: g.subjects.map((s) =>
-                s.name === selectedSubject
-                  ? { ...s, units: [...s.units, newUnitObj] }
-                  : s
-              ),
-            }
-          : g
-      )
-    );
-
-    setNewUnit({ name: "", content: "" });
-  };
-
-  // Remove unit
-  const removeUnit = (unitId) => {
-    setSubjects((prev) =>
-      prev.map((g) =>
-        g.grade === selectedGrade
-          ? {
-              ...g,
-              subjects: g.subjects.map((s) =>
-                s.name === selectedSubject
-                  ? { ...s, units: s.units.filter((u) => u.id !== unitId) }
-                  : s
-              ),
-            }
-          : g
-      )
-    );
-  };
-
+  // ---------------------------
+  // FETCH GRADES + SUBJECT COUNTS
+  // ---------------------------
   useEffect(() => {
-    if (!subjects.some((g) => g.grade === selectedGrade)) {
-      setSelectedGrade(subjects[0]?.grade || "");
-      setSelectedSubject("");
+    const fetchGrades = async () => {
+      setLoadingGrades(true);
+      try {
+        const res = await axiosInstance.get(API_PATHS.ADMIN.GRADES);
+        const grades = res.data?.grades || [];
+
+        let container = grades.map((g) => ({
+          grade: g.name,
+          gradeId: g._id,
+          subjects: [],
+        }));
+
+        if (container.length === 0) {
+          container = DEFAULT_GRADES.map((g) => ({
+            grade: g,
+            gradeId: null,
+            subjects: [],
+          }));
+        }
+
+        setSubjects(container);
+        setSelectedGrade(container[0]?.gradeId || "");
+
+        // Load subject count for each grade
+        for (const g of container) {
+          try {
+            const subRes = await axiosInstance.get(API_PATHS.ADMIN.GET_SUBJECTS, {
+              params: { gradeId: g.gradeId },
+            });
+
+            const list = subRes.data?.subjects || [];
+
+            setSubjects((prev) =>
+              prev.map((item) =>
+                item.gradeId === g.gradeId ? { ...item, subjects: list } : item
+              )
+            );
+          } catch {}
+        }
+      } catch (err) {
+        setAlertType("error");
+        setAlertMessage("Failed to load grade list.");
+      } finally {
+        setLoadingGrades(false);
+      }
+    };
+
+    fetchGrades();
+  }, []);
+
+  // ---------------------------
+  // FETCH SUBJECTS FOR SELECTED GRADE
+  // ---------------------------
+  useEffect(() => {
+    if (!selectedGrade) return;
+
+    const fetchSubjects = async () => {
+      setLoadingSubjects(true);
+      try {
+        const res = await axiosInstance.get(API_PATHS.ADMIN.GET_SUBJECTS, {
+          params: { gradeId: selectedGrade },
+        });
+
+        const apiSubjects = res.data?.subjects || [];
+        const transformed = apiSubjects.map((s) => ({
+          name: s.name,
+          subjectId: s._id,
+          units: (s.units || []).map((u) => ({
+            id: u._id || u.id,
+            name: u.name,
+            content: u.content,
+          })),
+        }));
+
+        setSubjects((prev) =>
+          prev.map((g) =>
+            String(g.gradeId) === String(selectedGrade)
+              ? { ...g, subjects: transformed }
+              : g
+          )
+        );
+      } catch (err) {
+        setAlertType("error");
+        setAlertMessage("Failed to load subjects.");
+      } finally {
+        setLoadingSubjects(false);
+      }
+    };
+
+    fetchSubjects();
+  }, [selectedGrade]);
+
+  // ---------------------------
+  // ADD SUBJECT
+  // ---------------------------
+  const addSubject = async () => {
+    if (!selectedGrade) {
+      setAlertType("error");
+      setAlertMessage("Select a grade first!");
+      return;
     }
-  }, [subjects, selectedGrade]);
+
+    const name = newSubject.trim();
+    if (!name) {
+      setAlertType("error");
+      setAlertMessage("Enter subject name");
+      return;
+    }
+
+    const already = currentGradeObj?.subjects?.some(
+      (s) => s.name.toLowerCase() === name.toLowerCase()
+    );
+    if (already) {
+      setAlertType("error");
+      setAlertMessage("Subject already exists!");
+      return;
+    }
+
+    setAddingSubject(true);
+    try {
+      const res = await axiosInstance.post(API_PATHS.ADMIN.ADD_SUBJECT, {
+        gradeId: selectedGrade,
+        name,
+      });
+
+      const s = res.data.subject;
+      const newSub = {
+        name: s.name,
+        subjectId: s._id,
+        units: [],
+      };
+
+      setSubjects((prev) =>
+        prev.map((g) =>
+          g.gradeId === selectedGrade ? { ...g, subjects: [...g.subjects, newSub] } : g
+        )
+      );
+
+      setNewSubject("");
+      setSelectedSubject(newSub.name);
+
+      setAlertType("success");
+      setAlertMessage("Subject added successfully!");
+    } catch {
+      setAlertType("error");
+      setAlertMessage("Failed to add subject.");
+    } finally {
+      setAddingSubject(false);
+    }
+  };
+
+  // ---------------------------
+  // DELETE SUBJECT WITH MODAL
+  // ---------------------------
+  const removeSubject = (subjectName) => {
+    const subj = currentGradeObj.subjects.find((s) => s.name === subjectName);
+    if (!subj) return;
+
+    setConfirmTitle("Delete Subject?");
+    setConfirmMessage(`Are you sure you want to delete subject "${subjectName}"?`);
+
+    setConfirmHandler(() => async () => {
+      setConfirmOpen(false);
+      setRemovingSubjectId(subj.subjectId);
+
+      try {
+        await axiosInstance.post(API_PATHS.ADMIN.REMOVE_SUBJECT, {
+          subjectId: subj.subjectId,
+        });
+
+        setSubjects((prev) =>
+          prev.map((g) =>
+            g.gradeId === selectedGrade
+              ? { ...g, subjects: g.subjects.filter((s) => s.subjectId !== subj.subjectId) }
+              : g
+          )
+        );
+
+        if (selectedSubject === subjectName) setSelectedSubject("");
+
+        setAlertType("success");
+        setAlertMessage("Subject removed successfully!");
+      } catch {
+        setAlertType("error");
+        setAlertMessage("Failed to delete subject.");
+      } finally {
+        setRemovingSubjectId(null);
+      }
+    });
+
+    setConfirmOpen(true);
+  };
+
+  // ---------------------------
+  // ADD UNIT
+  // ---------------------------
+  const addUnit = async () => {
+    const subj = currentGradeObj.subjects.find((s) => s.name === selectedSubject);
+    if (!subj) {
+      setAlertType("error");
+      setAlertMessage("Subject not found");
+      return;
+    }
+
+    const name = newUnit.name.trim();
+    const content = newUnit.content.trim();
+    if (!name || !content) {
+      setAlertType("error");
+      setAlertMessage("Enter unit details");
+      return;
+    }
+
+    setAddingUnit(true);
+    try {
+      const res = await axiosInstance.post(API_PATHS.ADMIN.ADD_UNIT, {
+        subjectId: subj.subjectId,
+        name,
+        content,
+      });
+
+      const updated = res.data.subject;
+
+      const updatedUnits = updated.units.map((u) => ({
+        id: u._id || u.id,
+        name: u.name,
+        content: u.content,
+      }));
+
+      setSubjects((prev) =>
+        prev.map((g) =>
+          g.gradeId === selectedGrade
+            ? {
+                ...g,
+                subjects: g.subjects.map((s) =>
+                  s.subjectId === subj.subjectId ? { ...s, units: updatedUnits } : s
+                ),
+              }
+            : g
+        )
+      );
+
+      setNewUnit({ name: "", content: "" });
+
+      setAlertType("success");
+      setAlertMessage("Unit added successfully!");
+    } catch {
+      setAlertType("error");
+      setAlertMessage("Failed to add unit");
+    } finally {
+      setAddingUnit(false);
+    }
+  };
+
+  // ---------------------------
+  // DELETE UNIT WITH MODAL
+  // ---------------------------
+  const removeUnit = (unitId) => {
+    const subj = currentGradeObj.subjects.find((s) => s.name === selectedSubject);
+    if (!subj) return;
+
+    setConfirmTitle("Delete Unit?");
+    setConfirmMessage("Are you sure you want to delete this unit?");
+
+    setConfirmHandler(() => async () => {
+      setConfirmOpen(false);
+      setRemovingUnitId(unitId);
+
+      try {
+        const res = await axiosInstance.post(API_PATHS.ADMIN.REMOVE_UNIT, {
+          subjectId: subj.subjectId,
+          unitId,
+        });
+
+        const updated = res.data.subject;
+
+        const updatedUnits = updated.units.map((u) => ({
+          id: u._id || u.id,
+          name: u.name,
+          content: u.content,
+        }));
+
+        setSubjects((prev) =>
+          prev.map((g) =>
+            g.gradeId === selectedGrade
+              ? {
+                  ...g,
+                  subjects: g.subjects.map((s) =>
+                    s.subjectId === subj.subjectId ? { ...s, units: updatedUnits } : s
+                  ),
+                }
+              : g
+          )
+        );
+
+        setAlertType("success");
+        setAlertMessage("Unit removed successfully!");
+      } catch {
+        setAlertType("error");
+        setAlertMessage("Failed to remove unit");
+      } finally {
+        setRemovingUnitId(null);
+      }
+    });
+
+    setConfirmOpen(true);
+  };
 
   return (
     <div className="min-h-screen flex flex-col app-background">
-      {/* Navbar */}
       <header ref={navbarRef} className="w-full fixed top-0 left-0 z-50">
         <AdminNavbar />
       </header>
 
-      {/* Main Section */}
-      <main
-        className="flex-1 p-8 overflow-y-auto transition-all duration-500"
-        style={{
-          paddingTop: `${navbarHeight + 130}px`,
-          marginLeft: "0", // No sidebar now
-        }}
-      >
-        <h1 className="text-3xl font-bold text-indigo-700 mb-6">
-          Manage Subjects & Units
-        </h1>
+      <main className="flex-1 p-8 overflow-y-auto" style={{ paddingTop: navbarHeight + 130 }}>
+        <h1 className="text-3xl font-bold text-indigo-700 mb-6">Manage Subjects & Units</h1>
 
-        {/* Grade + Add Subject row */}
+        <Alert type={alertType} message={alertMessage} />
+
+        {/* --------------------- GRADE SELECT --------------------- */}
         <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
           <div className="flex items-center gap-3">
             <label className="text-indigo-700 font-semibold">Select Grade:</label>
@@ -185,13 +404,17 @@ const AdmSubject = () => {
               className="p-2 border border-indigo-200 rounded-md bg-white"
             >
               {subjects.map((g) => (
-                <option key={g.grade} value={g.grade}>
+                <option
+                  key={g.gradeId || g.grade}
+                  value={g.gradeId}
+                >
                   {g.grade}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* ADD SUBJECT */}
           <div className="flex gap-3 items-center">
             <input
               value={newSubject}
@@ -201,20 +424,21 @@ const AdmSubject = () => {
             />
             <button
               onClick={addSubject}
+              disabled={addingSubject}
               className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md"
             >
-              <FaPlus className="inline mr-2" /> Add Subject
+              {addingSubject ? "Adding..." : "Add Subject"}
             </button>
           </div>
         </div>
 
-        {/* Grade Overview */}
+        {/* --------------------- GRADE CARDS --------------------- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {subjects.map((g) => (
             <div
-              key={g.grade}
+              key={g.gradeId || g.grade}
               className={`p-5 rounded-xl border shadow-md ${
-                selectedGrade === g.grade
+                g.gradeId === selectedGrade
                   ? "bg-indigo-50 border-indigo-400"
                   : "bg-white border-indigo-100"
               }`}
@@ -227,8 +451,8 @@ const AdmSubject = () => {
           ))}
         </div>
 
-        {/* Subject Selection */}
-        {currentGrade && currentGrade.subjects.length > 0 && (
+        {/* --------------------- SUBJECT SELECT --------------------- */}
+        {currentGradeObj && currentGradeObj.subjects.length > 0 && (
           <div className="flex gap-3 items-center mb-6">
             <label className="text-indigo-700 font-semibold">Select Subject:</label>
             <select
@@ -237,8 +461,12 @@ const AdmSubject = () => {
               className="p-2 border border-indigo-200 rounded-md bg-white"
             >
               <option value="">-- Select Subject --</option>
-              {currentGrade.subjects.map((s) => (
-                <option key={s.name} value={s.name}>
+
+              {currentGradeObj.subjects.map((s) => (
+                <option
+                  key={s.subjectId || s.name}
+                  value={s.name}
+                >
                   {s.name} ({s.units.length} units)
                 </option>
               ))}
@@ -247,22 +475,23 @@ const AdmSubject = () => {
             {selectedSubject && (
               <button
                 onClick={() => removeSubject(selectedSubject)}
+                disabled={Boolean(removingSubjectId)}
                 className="px-3 py-2 bg-red-600 text-white rounded-md"
               >
-                <FaTrash className="inline mr-1" /> Delete Subject
+                {removingSubjectId ? "Removing..." : "Delete Subject"}
               </button>
             )}
           </div>
         )}
 
-        {/* Unit Management */}
+        {/* --------------------- UNIT MANAGEMENT --------------------- */}
         {selectedSubject && (
           <>
             <h3 className="text-2xl font-semibold text-indigo-700 mb-4 flex items-center gap-2">
               <FaBookOpen /> {selectedSubject} Units
             </h3>
 
-            {/* Add Unit */}
+            {/* ADD UNIT */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
               <input
                 value={newUnit.name}
@@ -278,31 +507,31 @@ const AdmSubject = () => {
               />
               <button
                 onClick={addUnit}
+                disabled={addingUnit}
                 className="px-4 py-2 bg-green-600 text-white rounded-md"
               >
-                <FaPlus className="inline mr-1" /> Add Unit
+                {addingUnit ? "Adding..." : "Add Unit"}
               </button>
             </div>
 
-            {/* Unit List */}
-            {currentSubject?.units.length === 0 ? (
-              <p className="text-gray-500">
-                No units yet. Add lessons using the form above.
-              </p>
+            {/* UNIT LIST */}
+            {currentSubjectObj?.units.length === 0 ? (
+              <p className="text-gray-500">No units yet. Add lessons using the form above.</p>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {currentSubject.units.map((u) => (
-                  <div key={u.id} className="p-4 bg-white/80 border rounded-xl shadow-md">
+                {currentSubjectObj.units.map((u) => (
+                  <div key={u.id || u._id} className="p-4 bg-white/80 border rounded-xl shadow-md">
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-semibold text-indigo-800">{u.name}</h4>
                         <p className="text-gray-700 text-sm">{u.content}</p>
                       </div>
                       <button
-                        onClick={() => removeUnit(u.id)}
+                        onClick={() => removeUnit(u.id || u._id)}
+                        disabled={Boolean(removingUnitId)}
                         className="text-red-600 hover:text-red-800"
                       >
-                        <FaTrash />
+                        {removingUnitId === u.id ? "Removing..." : <FaTrash />}
                       </button>
                     </div>
                   </div>
@@ -311,6 +540,21 @@ const AdmSubject = () => {
             )}
           </>
         )}
+
+        {/* CONFIRM MODAL */}
+        <ConfirmModal
+          open={confirmOpen}
+          title={confirmTitle}
+          message={confirmMessage}
+          onConfirm={async () => {
+            try {
+              await confirmHandler();
+            } catch (err) {
+              console.error(err);
+            }
+          }}
+          onCancel={() => setConfirmOpen(false)}
+        />
       </main>
     </div>
   );
