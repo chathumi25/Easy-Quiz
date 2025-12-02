@@ -29,7 +29,7 @@ export const API_PATHS = {
   // -------------------------
   // ADMIN ROUTES
   // -------------------------
-    ADMIN: {
+  ADMIN: {
     DASHBOARD: "/api/adm/dashboard",
 
     GRADES: "/api/adm/grades",
@@ -38,14 +38,25 @@ export const API_PATHS = {
     ADD_STUDENT: "/api/adm/grades/add-student",
     REMOVE_STUDENT: "/api/adm/grades/remove-student",
 
-    // ===== SUBJECT API =====
-    GET_SUBJECTS: "/api/adm/subjects",                 // GET ?gradeId=
+    // SUBJECT API
+    GET_SUBJECTS: "/api/adm/subjects",
     ADD_SUBJECT: "/api/adm/subjects/add",
     REMOVE_SUBJECT: "/api/adm/subjects/remove",
     ADD_UNIT: "/api/adm/subjects/add-unit",
     REMOVE_UNIT: "/api/adm/subjects/remove-unit",
 
-    QUIZ: "/api/adm/quiz",
+    // QUIZ API (UPDATED)
+    QUIZ: {
+      BASE: "/api/adm/quiz",                       // GET all quizzes (filters allowed)
+      CREATE: "/api/adm/quiz",                     // POST create quiz
+      GET_ONE: (id) => `/api/adm/quiz/${id}`,      // GET single quiz
+      UPDATE: (id) => `/api/adm/quiz/${id}`,       // PUT update quiz meta
+      DELETE: (id) => `/api/adm/quiz/${id}`,       // DELETE quiz
+
+      ADD_QUESTION: (id) => `/api/adm/quiz/${id}/questions`,                // POST add question
+      UPDATE_QUESTION: (id, qId) => `/api/adm/quiz/${id}/questions/${qId}`, // PUT update question
+      DELETE_QUESTION: (id, qId) => `/api/adm/quiz/${id}/questions/${qId}`, // DELETE question
+    },
 
     PROFILE: "/api/adm/profile",
     UPDATE: "/api/adm/profile/update",
@@ -53,9 +64,7 @@ export const API_PATHS = {
     REMOVE_IMAGE: "/api/adm/profile/remove-image",
     CHANGE_PASSWORD: "/api/adm/profile/change-password",
     DELETE_ACCOUNT: "/api/adm/profile/delete-account",
-},
-
-
+  },
 
   IMAGE: {
     UPLOAD_IMAGE: "/api/auth/upload-image",
