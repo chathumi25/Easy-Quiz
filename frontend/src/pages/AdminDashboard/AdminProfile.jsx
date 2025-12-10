@@ -13,8 +13,12 @@ import { BASE_URL } from "../../utils/apiPaths";
 import { UserContext } from "../../context/userContext";
 import "../../admin.css";
 
+const gradientCard =
+  "rounded-2xl p-8 md:p-10 shadow-lg border border-indigo-300 " +
+  "bg-[linear-gradient(155deg,rgba(240,245,255,0.97),rgba(225,235,255,0.96),rgba(210,220,255,0.95),rgba(200,210,255,0.94),rgba(185,200,255,0.93),rgba(170,165,255,0.92))] " +
+  "backdrop-blur-lg transition hover:shadow-2xl hover:scale-[1.01]";
+
 const AdminProfile = () => {
-  // ⭐ USE THE CORRECT CONTEXT FUNCTION
   const { user: storedUser, setUser } = useContext(UserContext);
 
   const [name, setName] = useState(storedUser?.name || "");
@@ -45,13 +49,10 @@ const AdminProfile = () => {
   const fileInputRef = useRef(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // ⭐ SYNC IMAGE
   useEffect(() => {
     if (!storedUser) return;
-
     let img = storedUser.profileImage;
     if (img?.startsWith("/uploads")) img = BASE_URL + img;
-
     setTempImage(img || "");
   }, [storedUser]);
 
@@ -76,21 +77,16 @@ const AdminProfile = () => {
     }
   };
 
-  // ⭐ SAVE PROFILE
   const handleSaveProfile = async () => {
     try {
       const formData = new FormData();
       formData.append("name", name);
-
-      if (selectedFile) {
-        formData.append("profileImage", selectedFile);
-      }
+      if (selectedFile) formData.append("profileImage", selectedFile);
 
       const res = await axios.put("/api/adm/profile/update", formData);
 
       if (res.data.success) {
         const updatedUser = res.data.user;
-
         const fullImage = updatedUser.profileImage
           ? `${BASE_URL}${updatedUser.profileImage}`
           : "";
@@ -103,17 +99,13 @@ const AdminProfile = () => {
 
         setTempImage(fullImage);
         setMessage("✅ Profile updated successfully!");
-      } else {
-        setMessage("❌ Update failed.");
-      }
-    } catch (err) {
+      } else setMessage("❌ Update failed.");
+    } catch {
       setMessage("❌ Update failed");
     }
-
     setTimeout(() => setMessage(""), 3000);
   };
 
-  // ⭐ CHANGE PASSWORD
   const handleChangePassword = async () => {
     const { adminKey, current, new: newPass, confirm } = passwords;
 
@@ -137,17 +129,14 @@ const AdminProfile = () => {
       if (res.data.success) {
         setPassMessage("True! Password updated.");
         setPasswords({ adminKey: "", current: "", new: "", confirm: "" });
-      } else {
-        setPassMessage("❌ Failed to update password.");
-      }
-    } catch (err) {
+      } else setPassMessage("❌ Failed to update password.");
+    } catch {
       setPassMessage("❌ Error updating password.");
     }
 
     setTimeout(() => setPassMessage(""), 3000);
   };
 
-  // ⭐ DELETE ACCOUNT
   const confirmDelete = async () => {
     try {
       const res = await axios.delete("/api/adm/profile/delete-account");
@@ -173,7 +162,8 @@ const AdminProfile = () => {
         style={{ marginTop: `${navbarHeight + 120}px` }}
       >
         <div className="max-w-6xl mx-auto space-y-10">
-          {/* HEADER */}
+
+          {/* TITLE */}
           <div className="text-center animate-fadeIn">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-700 to-purple-800 bg-clip-text text-transparent">
               Admin Profile Settings
@@ -183,8 +173,8 @@ const AdminProfile = () => {
             </p>
           </div>
 
-          {/* PROFILE CARD */}
-          <div className="admin-card p-8 md:p-10 animate-fadeInExpand">
+          {/* PROFILE INFO CARD */}
+          <div className={gradientCard}>
             <h2 className="text-2xl font-semibold text-indigo-700 mb-6">
               Profile Information
             </h2>
@@ -223,7 +213,7 @@ const AdminProfile = () => {
                 />
               </div>
 
-              {/* PROFILE FORM */}
+              {/* FORM */}
               <div className="flex-1 space-y-5 w-full">
                 <div>
                   <label className="font-medium text-sm">Full Name</label>
@@ -260,7 +250,7 @@ const AdminProfile = () => {
           </div>
 
           {/* PASSWORD CARD */}
-          <div className="admin-card p-8 md:p-10 animate-fadeInExpand">
+          <div className={gradientCard}>
             <h2 className="text-2xl font-semibold text-indigo-700 mb-6 flex items-center gap-2">
               <FaLock /> Change Password
             </h2>
@@ -274,9 +264,7 @@ const AdminProfile = () => {
             <PasswordField
               label="Admin Security Key"
               value={passwords.adminKey}
-              onChange={(v) =>
-                setPasswords({ ...passwords, adminKey: v })
-              }
+              onChange={(v) => setPasswords({ ...passwords, adminKey: v })}
               show={showPass.adminKey}
               toggle={() =>
                 setShowPass({ ...showPass, adminKey: !showPass.adminKey })
@@ -287,9 +275,7 @@ const AdminProfile = () => {
               <PasswordField
                 label="Current Password"
                 value={passwords.current}
-                onChange={(v) =>
-                  setPasswords({ ...passwords, current: v })
-                }
+                onChange={(v) => setPasswords({ ...passwords, current: v })}
                 show={showPass.current}
                 toggle={() =>
                   setShowPass({ ...showPass, current: !showPass.current })
@@ -309,9 +295,7 @@ const AdminProfile = () => {
               <PasswordField
                 label="Confirm Password"
                 value={passwords.confirm}
-                onChange={(v) =>
-                  setPasswords({ ...passwords, confirm: v })
-                }
+                onChange={(v) => setPasswords({ ...passwords, confirm: v })}
                 show={showPass.confirm}
                 toggle={() =>
                   setShowPass({
@@ -327,11 +311,12 @@ const AdminProfile = () => {
             </button>
           </div>
 
-          {/* DELETE SECTION */}
-          <div className="admin-card p-8 md:p-10 text-center animate-fadeInExpand">
+          {/* DANGER ZONE */}
+          <div className={gradientCard + " text-center"}>
             <h2 className="text-xl font-semibold text-red-600 mb-4">
               Danger Zone
             </h2>
+
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="btn-danger px-6 py-2"
@@ -342,17 +327,16 @@ const AdminProfile = () => {
           </div>
 
           {/* ABOUT ADMIN */}
-          <div className="admin-card p-8 md:p-10 animate-fadeInExpand">
+          <div className={gradientCard}>
             <h2 className="text-2xl font-semibold text-indigo-700 mb-4">
               About Admin Role
             </h2>
             <p className="text-gray-700 leading-relaxed">
               As an EasyQuiz administrator, you have full control over the platform…
-              You manage quizzes, subjects, grades, analytics, and ensure the 
+              You manage quizzes, subjects, grades, analytics, and ensure the
               system works smoothly for all students.
             </p>
           </div>
-
         </div>
       </main>
 

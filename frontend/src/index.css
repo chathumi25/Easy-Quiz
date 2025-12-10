@@ -5,37 +5,41 @@
   --font-sans: 'Inter', sans-serif;
 }
 
+
 @layer base {
   body {
-    @apply bg-gray-100 dark:bg-blue-100 text-gray-900 dark:text-gray-900 font-sans;
+    @apply text-gray-900 font-sans;
+    background: transparent !important;   /* FIX */
   }
 }
 
-.card {
-  @apply bg-black dark:bg-gray-100 shadow-md rounded-lg p-6;
-}
-
-/*  Global gradient background for entire app */
-
+/* FULL PAGE BACKGROUND */
 .app-background {
- background: linear-gradient(135deg,
-  rgba(245, 248, 255, 1) 0%,     /* white-blue */
-  rgba(225, 230, 255, 0.95) 30%, /* pale blue-lilac */
-  rgba(210, 215, 255, 0.92) 60%, /* misty lavender */
-  rgba(210, 180, 255, 0.95) 100% /* purple glow */
-);
-
-
-
+  background:
+    radial-gradient(circle at 20% 25%, rgba(255, 210, 255, 0.45), transparent 55%),
+    radial-gradient(circle at 75% 20%, rgba(190, 220, 255, 0.40), transparent 60%),
+    radial-gradient(circle at 60% 75%, rgba(255, 180, 225, 0.40), transparent 60%),
+    radial-gradient(circle at 30% 85%, rgba(205, 225, 255, 0.35), transparent 60%),
+    linear-gradient(
+      135deg,
+      #e5e8fb 0%,
+      #ded9fa 30%,
+      #e7ddff 60%,
+      #f6eaff 85%,
+      #fdf7ff 100%
+    );
 
   background-attachment: fixed;
   background-size: cover;
   background-repeat: no-repeat;
   min-height: 100vh;
-  color: #1e1e2f;
-  overflow-x: hidden;
-  position: relative;
+  transition: background 0.3s ease;
 }
+
+
+/*  Global gradient background for entire app */
+
+
 
 @keyframes toastSlide {
   from {

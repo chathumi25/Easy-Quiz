@@ -2,87 +2,132 @@
 @import "tailwindcss";
 
 /* =============================
-   GLOBAL ADMIN THEME STYLES
+   GLOBAL THEME — SOFT UI
+ /* BODY MUST BE TRANSPARENT */
+/* =============================
+   SOFT UI 3D BLOB BACKGROUND (NO IMAGE)
    ============================= */
-
-/* Base font and smooth scroll */
-body {
-  font-family: "Inter", sans-serif;
-  scroll-behavior: smooth;
-  color: #1e1e2f;
-  background: linear-gradient(135deg, #e2e8f0, #f0f4ff, #f6eaff);
-  background-attachment: fixed;
-  min-height: 100vh;
-}
-
-/* Consistent gradient for background wrappers */
 .app-background {
-  background: linear-gradient(135deg, #e2e8f0 0%, #f0f4ff 50%, #f6eaff 100%);
-  background-attachment: fixed;
+  position: relative;
+  width: 100%;
   min-height: 100vh;
-  color: #1e1e2f;
-  transition: background 0.3s ease;
+  overflow: hidden;
+  background: linear-gradient(135deg, #eef1ff 0%, #f7eaff 100%);
 }
 
-/* ==========================================
-   ADMIN CONTAINER & CARD ENHANCEMENTS
-   ========================================== */
+/* Blobs */
+.app-background::before,
+.app-background::after {
+  content: "";
+  position: absolute;
+  width: 450px;
+  height: 450px;
+  border-radius: 50%;
+  filter: blur(55px);
+  opacity: 0.75;
+  z-index: 0;
+}
 
-/* General admin cards */
-.admin-card {
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 1rem;
-  box-shadow: 0 8px 20px rgba(100, 100, 150, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.08);
+/* Left Blob */
+.app-background::before {
+  top: -120px;
+  left: -80px;
+  background: radial-gradient(circle at 30% 30%, #b4c7ff, #d6b3ff, transparent 70%);
+}
+
+
+
+/* Floating Spheres */
+.app-background .sphere {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ffffff, #a5b6ff 60%);
+  box-shadow: 0 20px 40px rgba(150, 150, 255, 0.25);
+  opacity: 0.9;
+  filter: blur(0.3px);
+}
+
+/* sphere positions */
+.s1 { top: 12%; left: 18%; }
+.s2 { top: 48%; left: 10%; width: 140px; height: 140px; }
+.s3 { top: 25%; right: 14%; background: radial-gradient(circle at 30% 30%, #ffe0ff, #caaaff 60%); }
+.s4 { bottom: 10%; right: 20%; width: 120px; height: 120px; }
+
+
+/* =============================
+   CARDS — Soft UI
+   ============================= */
+.admin-card,
+.dashboard-card,
+.panel {
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(120, 122, 255, 0.12);
+
+  /* Upgraded soft shadow */
+  box-shadow:
+    6px 6px 18px rgba(120, 120, 200, 0.12),
+    -6px -6px 18px rgba(255, 255, 255, 0.6);
+
   transition: all 0.3s ease;
 }
 
-/* Card hover interaction */
-.admin-card:hover {
-  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15);
-  transform: translateY(-4px);
-}
-
-/* Subject cards */
-.subject-card {
-  transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(99, 102, 241, 0.1);
-  border-radius: 1rem;
-  box-shadow: 0 4px 10px rgba(100, 100, 150, 0.05);
-}
-
-.subject-card:hover {
-  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.12);
+/* Hover elevation */
+.admin-card:hover,
+.dashboard-card:hover,
+.panel:hover {
   transform: translateY(-3px);
+  box-shadow:
+    8px 8px 22px rgba(120, 120, 200, 0.15),
+    -6px -6px 22px rgba(255, 255, 255, 0.7);
 }
 
-/* Grade cards */
+/* Subject + Grade cards */
+.subject-card,
 .grade-card {
   background: rgba(255, 255, 255, 0.85);
   border-radius: 1rem;
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  padding: 1rem;
+  border: 1px solid rgba(120, 122, 255, 0.15);
+  box-shadow:
+    4px 4px 14px rgba(140, 140, 200, 0.08),
+    -4px -4px 14px rgba(255, 255, 255, 0.6);
   transition: all 0.3s ease;
 }
+
+.subject-card:hover,
 .grade-card:hover {
-  background: rgba(240, 240, 255, 0.95);
-  border-color: rgba(99, 102, 241, 0.3);
-  transform: scale(1.02);
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(120, 122, 255, 0.3);
 }
 
-/* ==========================================
-   INPUTS, BUTTONS, FORMS
-   ========================================== */
+/* Selected grade */
+.selected-grade {
+  background: #eef0ff;
+  border: 1px solid #c7ccff;
+}
 
-/* Inputs */
+/* =============================
+   INPUTS & FORM ELEMENTS
+   ============================= */
 input,
 select,
 textarea {
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: rgba(255, 255, 255, 0.85);
-  transition: all 0.2s ease;
+  border: 1px solid rgba(120, 122, 255, 0.25);
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  background: rgba(255, 255, 255, 0.9);
+
+  /* Soft inset */
+  box-shadow:
+    inset 2px 2px 6px rgba(150, 150, 200, 0.1),
+    inset -2px -2px 6px rgba(255, 255, 255, 0.6);
+
+  transition: all 0.25s ease;
 }
 
 input:focus,
@@ -90,14 +135,18 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
-  background: white;
+  box-shadow:
+    0 0 0 3px rgba(99, 102, 241, 0.25),
+    inset 2px 2px 6px rgba(150, 150, 200, 0.08);
+  background: #ffffff;
 }
 
-/* Buttons (general admin) */
+/* =============================
+   BUTTON STYLING — Premium Soft UI
+   ============================= */
 button {
-  transition: all 0.25s ease;
   font-weight: 500;
+  transition: all 0.25s ease;
 }
 
 button:hover {
@@ -105,35 +154,100 @@ button:hover {
   opacity: 0.95;
 }
 
-/* Gradient buttons */
+/* Gradient button */
 .btn-gradient {
   background: linear-gradient(90deg, #6366f1, #8b5cf6);
   color: white;
-  border-radius: 0.5rem;
-  padding: 0.6rem 1.2rem;
+  padding: 0.65rem 1.3rem;
+  border-radius: 0.6rem;
+  box-shadow: 0 4px 12px rgba(120, 122, 255, 0.28);
   transition: all 0.3s ease;
 }
+
 .btn-gradient:hover {
   background: linear-gradient(90deg, #4f46e5, #7c3aed);
-  box-shadow: 0 6px 15px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 6px 16px rgba(120, 122, 255, 0.35);
+  transform: translateY(-2px);
 }
 
 /* Delete button */
 .btn-danger {
-  background: #dc2626;
-  color: white;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1rem;
+  background: #e11d48;
+  color: #fff;
+  padding: 0.55rem 1.1rem;
+  border-radius: 0.55rem;
 }
+
 .btn-danger:hover {
-  background: #b91c1c;
+  background: #be123c;
 }
 
-/* ==========================================
-   ANIMATIONS & TRANSITIONS
-   ========================================== */
+/* =============================
+   UTILITY CLASSES
+   ============================= */
 
-/* Smooth fade-in */
+/* Soft Shadow Utility */
+.shadow-soft {
+  box-shadow:
+    6px 6px 18px rgba(140, 140, 200, 0.1),
+    -6px -6px 18px rgba(255, 255, 255, 0.7);
+}
+
+/* Divider */
+.divider {
+  border-top: 1px solid rgba(120, 122, 255, 0.2);
+  margin: 1rem 0;
+}
+
+/* Unit Box */
+.unit-box {
+  background: rgba(240, 240, 255, 0.65);
+  border: 1px solid rgba(120, 122, 255, 0.15);
+  border-radius: 0.85rem;
+  padding: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.unit-box:hover {
+  background: rgba(240, 240, 255, 0.9);
+  border-color: rgba(120, 122, 255, 0.35);
+}
+
+/* =============================
+   LIST ITEM STYLING
+   ============================= */
+.grade-item,
+.student-item {
+  background: rgba(255, 255, 255, 0.85);
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(120, 122, 255, 0.12);
+  box-shadow:
+    4px 4px 12px rgba(140, 140, 200, 0.08),
+    -4px -4px 12px rgba(255, 255, 255, 0.6);
+
+  transition: all 0.25s ease;
+}
+
+.grade-item:hover,
+.student-item:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.student-name {
+  color: #4c1d95;
+  font-weight: 600;
+}
+
+.student-email {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+/* =============================
+   ANIMATIONS
+   ============================= */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -141,65 +255,57 @@ button:hover {
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
+
 .animate-fadeIn {
   animation: fadeIn 0.25s ease-out;
 }
 
-/* Expand-in effect for subject/unit additions */
 @keyframes fadeInExpand {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.98);
+    transform: translateY(6px) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale(1);
   }
 }
+
 .animate-fadeInExpand {
   animation: fadeInExpand 0.3s ease-out;
 }
 
-/* ==========================================
-   UTILITIES
-   ========================================== */
-
-/* Subtle shadows for content cards */
-.shadow-soft {
-  box-shadow: 0 4px 14px rgba(100, 100, 150, 0.08);
+/* =============================
+   SCROLLBAR
+   ============================= */
+.max-h-96::-webkit-scrollbar {
+  width: 8px;
+}
+.max-h-96::-webkit-scrollbar-track {
+  background: #e3e5ff;
+  border-radius: 10px;
+}
+.max-h-96::-webkit-scrollbar-thumb {
+  background: #818cf8;
+  border-radius: 10px;
+}
+.max-h-96::-webkit-scrollbar-thumb:hover {
+  background: #6366f1;
 }
 
-/* Divider lines */
-.divider {
-  border-top: 1px solid rgba(99, 102, 241, 0.15);
-  margin: 1rem 0;
-}
-
-/* Unit box styling */
-.unit-box {
-  background: rgba(240, 240, 255, 0.6);
-  border: 1px solid rgba(99, 102, 241, 0.1);
-  border-radius: 0.75rem;
-  padding: 0.8rem;
-  transition: all 0.3s ease;
-}
-.unit-box:hover {
-  background: rgba(240, 240, 255, 0.9);
-  border-color: rgba(99, 102, 241, 0.3);
-}
-
-/* ==========================================
-   RESPONSIVE ENHANCEMENTS
-   ========================================== */
-
+/* =============================
+   RESPONSIVE
+   ============================= */
 @media (max-width: 768px) {
   .admin-card,
-  .subject-card {
+  .subject-card,
+  .dashboard-card,
+  .panel {
     padding: 1rem;
   }
+
   input,
   select,
   button {
@@ -207,123 +313,21 @@ button:hover {
   }
 }
 
-.btn-gradient {
-  background: linear-gradient(to right, #4f46e5, #7c3aed);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  transition: 0.2s;
-}
-.btn-gradient:hover {
-  opacity: 0.9;
-  transform: scale(1.03);
-}
-.btn-danger {
-  background: #dc2626;
-  color: white;
-  border-radius: 0.375rem;
+/* Soft-Blue Scrollbar */
+.custom-scroll::-webkit-scrollbar {
+  width: 10px;
 }
 
-.app-background {
-  margin: 0;
-  padding: 0;
-  font-family: 'Inter', sans-serif;
-
-
-  
-background: linear-gradient(135deg,
-  #e5e8fb 0%,    /* almost white */
-  #ded9fa 35%,   /* soft lavender */
-  #d3c4f7 70%,   /* gentle purple */
-  #f4ecff 100%   /* pastel violet */
-);
-
-  background-attachment: fixed;
-  background-size: cover;
-  background-repeat: no-repeat;
-  min-height: 100vh;
-  color: #1e1e2f;
-}
-
-.panel {
-  @apply bg-white/80 p-8 rounded-2xl shadow-lg border border-indigo-100;
-}
-
-.grade-item {
-  @apply p-4 bg-white rounded-xl flex justify-between items-center shadow transition;
-}
-.selected-grade {
-  @apply bg-indigo-50 border border-indigo-200;
-}
-
-.grade-circle {
-  @apply w-12 h-12 bg-indigo-100 text-indigo-700 font-bold rounded-full flex items-center justify-center shadow;
-}
-
-.grade-name {
-  @apply font-semibold text-indigo-800 text-lg;
-}
-
-.grade-count {
-  @apply text-xs text-gray-500;
-}
-
-.icon-btn {
-  @apply p-2 text-white rounded-lg shadow hover:opacity-90;
-}
-
-.student-item {
-  @apply flex justify-between items-center p-5 bg-white border rounded-xl shadow-sm;
-}
-
-.student-name {
-  @apply text-indigo-800 font-medium text-lg;
-}
-
-.student-email {
-  @apply text-gray-600 text-xs;
-}
-
-.btn-green {
-  @apply px-6 py-3 bg-green-600 text-white rounded-lg;
-}
-
-.btn-gray {
-  @apply px-6 py-3 bg-gray-300 rounded-lg;
-}
-
-.input-box {
-  @apply p-4 rounded-xl border border-indigo-300;
-}
-
-.error-box {
-  @apply mt-4 text-red-600 bg-red-100 border border-red-200 rounded-lg p-3;
-}
-
-.success-box {
-  @apply mt-4 text-green-700 bg-green-100 border border-green-200 rounded-lg p-3;
-}
-
-.dashboard-card {
-  @apply bg-white/80 p-6 rounded-2xl shadow-md border border-indigo-100;
-}
-
-
-/* Custom scrollbar */
-.max-h-96::-webkit-scrollbar {
-  width: 8px;
-}
-
-.max-h-96::-webkit-scrollbar-track {
-  background: #e0e7ff;
+.custom-scroll::-webkit-scrollbar-track {
+  background: #e9e6ff;
   border-radius: 10px;
 }
 
-.max-h-96::-webkit-scrollbar-thumb {
-  background: #818cf8;
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #818cf8, #a78bfa);
   border-radius: 10px;
 }
 
-.max-h-96::-webkit-scrollbar-thumb:hover {
-  background: #6366f1;
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6366f1, #7c3aed);
 }

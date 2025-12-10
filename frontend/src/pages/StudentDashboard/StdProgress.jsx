@@ -19,17 +19,18 @@ function StdProgress() {
     "🌟 The expert in anything was once a beginner.",
   ];
 
-  // Dynamic navbar height
   useEffect(() => {
     const updateNavbarHeight = () => {
-      if (navbarRef.current) setNavbarHeight(navbarRef.current.offsetHeight);
+      if (navbarRef.current) {
+        setNavbarHeight(navbarRef.current.offsetHeight);
+      }
     };
     updateNavbarHeight();
     window.addEventListener("resize", updateNavbarHeight);
     return () => window.removeEventListener("resize", updateNavbarHeight);
   }, []);
 
-  // Generate random progress data for chart demo
+  // Random mock chart data
   const generateProgress = (grade) => {
     const subjects = ["Science", "Mathematics", "ICT", "English", "History"];
     return subjects.map((subject) => ({
@@ -38,21 +39,19 @@ function StdProgress() {
     }));
   };
 
-  // When grade changes
   useEffect(() => {
     const data = generateProgress(selectedGrade);
     setProgressData(data);
+
     const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
     setMotivationalQuote(randomQuote);
   }, [selectedGrade]);
 
-  // Calculate average marks across subjects
   const averageMarks = (
     progressData.reduce((acc, curr) => acc + curr.score, 0) /
     progressData.length
   ).toFixed(1);
 
-  // Find best mark and corresponding subject
   const bestEntry = progressData.reduce(
     (best, current) => (current.score > best.score ? current : best),
     { subject: "", score: 0 }
@@ -68,9 +67,7 @@ function StdProgress() {
       {/* Main Content */}
       <main
         className="flex-1 p-8 overflow-y-auto transition-all duration-500"
-        style={{
-          paddingTop: `${navbarHeight + 130}px`,
-        }}
+        style={{ paddingTop: `${navbarHeight + 130}px` }}
       >
         <h1 className="text-3xl font-bold text-indigo-700 mb-4">
           My Progress Tracker
@@ -99,37 +96,40 @@ function StdProgress() {
           </p>
         </div>
 
-        {/* Line Chart */}
+        {/* Chart Box */}
         <div className="chart-container mb-10">
           <StudentProgressLineChart data={progressData} grade={selectedGrade} />
         </div>
 
-        {/* Progress Cards */}
+        {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Average Marks */}
           <div className="progress-card bg-white/80 p-6 rounded-xl border border-indigo-100 shadow-md hover:shadow-lg transition">
-            <h3 className="text-lg font-semibold text-indigo-600 mb-2">Average Marks</h3>
+            <h3 className="text-lg font-semibold text-indigo-600 mb-2">
+              Average Marks
+            </h3>
             <p className="text-3xl font-bold text-indigo-800">{averageMarks}%</p>
           </div>
 
-          {/* Best Mark */}
           <div className="progress-card bg-white/80 p-6 rounded-xl border border-indigo-100 shadow-md hover:shadow-lg transition">
-            <h3 className="text-lg font-semibold text-indigo-600 mb-2">Best Mark</h3>
+            <h3 className="text-lg font-semibold text-indigo-600 mb-2">
+              Best Mark
+            </h3>
             <p className="text-2xl font-bold text-green-600">
               {bestEntry.score}% — {bestEntry.subject}
             </p>
           </div>
 
-          {/* Keep Going */}
           <div className="progress-card bg-white/80 p-6 rounded-xl border border-indigo-100 shadow-md hover:shadow-lg transition">
-            <h3 className="text-lg font-semibold text-indigo-600 mb-2">Keep Going!</h3>
+            <h3 className="text-lg font-semibold text-indigo-600 mb-2">
+              Keep Going!
+            </h3>
             <p className="text-gray-700 leading-relaxed">
               You’re improving steadily! Stay consistent and aim higher every week. 🌟
             </p>
           </div>
         </div>
 
-        {/* Encouragement Section */}
+        {/* Inspiration */}
         <div className="mt-12 text-center">
           <h2 className="text-2xl font-bold text-purple-700 mb-4">
             🌈 Progress is not about perfection — it’s about persistence!
@@ -141,8 +141,8 @@ function StdProgress() {
         </div>
       </main>
 
-      {/* Inline CSS for custom styling */}
-      <style jsx>{`
+      {/* FIXED — Standard CSS, NOT JSX */}
+      <style>{`
         .motivational-card {
           background: linear-gradient(
             90deg,
@@ -153,6 +153,7 @@ function StdProgress() {
           border-radius: 1rem;
           padding: 1rem;
         }
+
         .chart-container {
           background: white;
           border-radius: 1rem;
