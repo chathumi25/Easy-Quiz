@@ -1,3 +1,4 @@
+// backend/models/AdmSubject.js
 const mongoose = require("mongoose");
 
 const UnitSchema = new mongoose.Schema({
@@ -9,7 +10,7 @@ const AdmSubjectSchema = new mongoose.Schema(
   {
     grade: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "AdmGrade", // your grade model name
+      ref: "Grade",   // 🔥 FIXED — must match your real Grade model
       required: true,
     },
     name: { type: String, required: true },

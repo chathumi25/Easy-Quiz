@@ -1,3 +1,4 @@
+// backend/models/Student.js
 const mongoose = require("mongoose");
 
 const StudentSchema = new mongoose.Schema(
@@ -10,8 +11,12 @@ const StudentSchema = new mongoose.Schema(
 
     profileImage: { type: String, default: "" },
 
-    // ⭐ ADD GRADE FIELD
-    grade: { type: String, default: "" }
+    // ⭐ Must be ObjectId referencing Grade
+    grade: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Grade",
+      default: null
+    }
   },
   { timestamps: true }
 );

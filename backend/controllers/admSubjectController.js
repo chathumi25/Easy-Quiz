@@ -1,34 +1,40 @@
-// backend/controllers/admSubjectController.js
 const AdmSubject = require("../models/AdmSubject");
+const Grade = require("../models/Grade");
+const mongoose = require("mongoose");
 
-// GET subjects by gradeId
+// GET subjects by grade
 exports.getSubjectsByGrade = async (req, res) => {
   try {
     const { gradeId } = req.query;
 
     if (!gradeId) {
+      return res.json({ success: true, subjects: [] });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(gradeId)) {
       return res.status(400).json({
         success: false,
-        message: "gradeId is required",
+        message: "Invalid gradeId",
       });
     }
 
-    const subjects = await AdmSubject.find({ grade: gradeId });
+    const subjects = await AdmSubject.find({ grade: gradeId })
+      .select("name units")
+      .sort({ name: 1 })
+      .lean();
 
     return res.json({
       success: true,
       subjects,
     });
+
   } catch (err) {
     console.error("GET SUBJECTS ERROR:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch subjects",
-    });
+    return res.status(500).json({ success: false, message: "Failed to fetch subjects" });
   }
 };
 
-// ADD subject
+// ADD subject to a grade
 exports.addSubject = async (req, res) => {
   try {
     const { gradeId, name } = req.body;
@@ -36,37 +42,43 @@ exports.addSubject = async (req, res) => {
     if (!gradeId || !name) {
       return res.status(400).json({
         success: false,
-        message: "gradeId and name required",
+        message: "gradeId and name are required",
       });
     }
 
-    const exists = await AdmSubject.findOne({ grade: gradeId, name });
+    if (!mongoose.Types.ObjectId.isValid(gradeId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid gradeId",
+      });
+    }
+
+    const exists = await AdmSubject.findOne({
+      grade: gradeId,
+      name: { $regex: `^${name}$`, $options: "i" },
+    });
 
     if (exists) {
       return res.status(400).json({
         success: false,
-        message: "Subject already exists",
+        message: `Subject "${name}" already exists`,
       });
     }
 
-    const subject = new AdmSubject({
+    const subject = await AdmSubject.create({
       grade: gradeId,
       name,
       units: [],
     });
 
-    await subject.save();
-
     return res.json({
       success: true,
       subject,
     });
+
   } catch (err) {
     console.error("ADD SUBJECT ERROR:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to add subject",
-    });
+    return res.status(500).json({ success: false, message: "Failed to add subject" });
   }
 };
 
@@ -75,54 +87,40 @@ exports.removeSubject = async (req, res) => {
   try {
     const { subjectId } = req.body;
 
-    if (!subjectId) {
-      return res.status(400).json({
-        success: false,
-        message: "subjectId is required",
-      });
+    if (!mongoose.Types.ObjectId.isValid(subjectId)) {
+      return res.status(400).json({ success: false, message: "Invalid subjectId" });
     }
 
     await AdmSubject.findByIdAndDelete(subjectId);
 
-    return res.json({
-      success: true,
-      message: "Subject deleted",
-    });
+    return res.json({ success: true, message: "Subject removed" });
+
   } catch (err) {
     console.error("REMOVE SUBJECT ERROR:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to delete subject",
-    });
+    return res.status(500).json({ success: false, message: "Failed to delete subject" });
   }
 };
 
-// ADD unit
+// ADD unit to subject
 exports.addUnit = async (req, res) => {
   try {
     const { subjectId, name, content } = req.body;
 
-    const subject = await AdmSubject.findById(subjectId);
-    if (!subject) {
-      return res.status(404).json({
-        success: false,
-        message: "Subject not found",
-      });
+    if (!mongoose.Types.ObjectId.isValid(subjectId)) {
+      return res.status(400).json({ success: false, message: "Invalid subjectId" });
     }
+
+    const subject = await AdmSubject.findById(subjectId);
+    if (!subject) return res.status(404).json({ success: false, message: "Subject not found" });
 
     subject.units.push({ name, content });
     await subject.save();
 
-    return res.json({
-      success: true,
-      subject,
-    });
+    return res.json({ success: true, subject });
+
   } catch (err) {
     console.error("ADD UNIT ERROR:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to add unit",
-    });
+    return res.status(500).json({ success: false, message: "Failed to add unit" });
   }
 };
 
@@ -131,29 +129,20 @@ exports.removeUnit = async (req, res) => {
   try {
     const { subjectId, unitId } = req.body;
 
-    const subject = await AdmSubject.findById(subjectId);
-    if (!subject) {
-      return res.status(404).json({
-        success: false,
-        message: "Subject not found",
-      });
+    if (!mongoose.Types.ObjectId.isValid(subjectId)) {
+      return res.status(400).json({ success: false, message: "Invalid subjectId" });
     }
 
-    subject.units = subject.units.filter(
-      (u) => String(u._id) !== String(unitId)
-    );
+    const subject = await AdmSubject.findById(subjectId);
+    if (!subject) return res.status(404).json({ success: false, message: "Subject not found" });
 
+    subject.units = subject.units.filter((u) => String(u._id) !== String(unitId));
     await subject.save();
 
-    return res.json({
-      success: true,
-      subject,
-    });
+    return res.json({ success: true, subject });
+
   } catch (err) {
     console.error("REMOVE UNIT ERROR:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to remove unit",
-    });
+    return res.status(500).json({ success: false, message: "Failed to remove unit" });
   }
 };

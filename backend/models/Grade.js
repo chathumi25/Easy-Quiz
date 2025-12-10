@@ -3,7 +3,6 @@ const mongoose = require("mongoose");
 
 const studentSubSchema = new mongoose.Schema(
   {
-    _id: false,
     studentId: { type: String, required: true },
     name: { type: String, required: true },
     email: { type: String, required: true },
