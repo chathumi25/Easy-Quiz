@@ -28,6 +28,7 @@ exports.registerUser = async (req, res) => {
 
     let role = "student";
 
+    // ADMIN REGISTER
     if (adminKey) {
       if (adminKey !== process.env.ADMIN_KEY) {
         return res.status(401).json({
@@ -51,28 +52,42 @@ exports.registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const profileImage = req.file ? `/uploads/${req.file.filename}` : "";
 
+    let gradeId = null;
+
+    // ⭐ FIX — Convert grade name → ObjectId
+    if (role === "student") {
+      const gradeDoc = await Grade.findOne({ name: grade });
+
+      if (!gradeDoc) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid grade selected",
+        });
+      }
+
+      gradeId = gradeDoc._id;
+    }
+
+    // ⭐ SAVE STUDENT WITH ObjectId, NOT STRING
     const newUser = await model.create({
       name,
       email,
       password: hashedPassword,
       role,
       profileImage,
-      grade: role === "student" ? grade : undefined,
+      grade: role === "student" ? gradeId : undefined,
     });
 
-    // ⭐ Insert student into grade
-    if (role === "student" && grade) {
-      const gradeDoc = await Grade.findOne({ name: grade });
-
-      if (gradeDoc) {
-        gradeDoc.students.push({
-          studentId: newUser._id.toString(),
-          name,
-          email,
-          registeredAt: new Date().toISOString(),
-        });
-        await gradeDoc.save();
-      }
+    // ⭐ Add student record inside the grade document
+    if (role === "student") {
+      const gradeDoc = await Grade.findById(gradeId);
+      gradeDoc.students.push({
+        studentId: newUser._id,
+        name,
+        email,
+        registeredAt: new Date(),
+      });
+      await gradeDoc.save();
     }
 
     return res.status(201).json({

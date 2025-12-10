@@ -1,24 +1,28 @@
 // backend/middlewere/upload.js
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
+
+// ensure uploads folder exists
+const uploadsDir = path.join(__dirname, "..", "uploads");
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 // Storage config
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "..", "uploads"));
+    cb(null, uploadsDir);
   },
   filename: function (req, file, cb) {
-    cb(
-      null,
-      Date.now() + "-" + file.originalname.toLowerCase().replace(/\s+/g, "_")
-    );
+    const safeName = file.originalname.toLowerCase().replace(/\s+/g, "_");
+    cb(null, Date.now() + "-" + safeName);
   },
 });
 
 // Allow only image files
 const fileFilter = (req, file, cb) => {
   const allowed = /jpg|jpeg|png|gif/;
-  const isValidExt = allowed.test(path.extname(file.originalname).toLowerCase());
+  const ext = path.extname(file.originalname).toLowerCase();
+  const isValidExt = allowed.test(ext);
   const isValidMime = allowed.test(file.mimetype);
 
   if (isValidExt && isValidMime) {
@@ -28,4 +32,4 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-module.exports = multer({ storage, fileFilter });
+module.exports = require("multer")({ storage, fileFilter });
