@@ -3,8 +3,9 @@ const express = require("express");
 const router = express.Router();
 const admQuizController = require("../controllers/admQuizController");
 const { auth, adminOnly } = require("../middlewere/authMiddleware");
+const upload = require("../middlewere/upload");
 
-// All routes protected for admins
+// protect routes for admins
 router.use(auth);
 router.use(adminOnly);
 
@@ -14,20 +15,20 @@ router.get("/", admQuizController.getQuizzes);
 // GET single quiz
 router.get("/:id", admQuizController.getQuizById);
 
-// CREATE quiz
+// CREATE quiz (JSON body)
 router.post("/", admQuizController.createQuiz);
 
-// UPDATE quiz meta
+// UPDATE quiz meta (JSON body)
 router.put("/:id", admQuizController.updateQuiz);
 
 // DELETE quiz
 router.delete("/:id", admQuizController.deleteQuiz);
 
-// ADD question to quiz
-router.post("/:id/questions", admQuizController.addQuestion);
+// ADD question to quiz (multipart/form-data) - image optional
+router.post("/:id/questions", upload.single("image"), admQuizController.addQuestion);
 
-// UPDATE question
-router.put("/:id/questions/:qId", admQuizController.updateQuestion);
+// UPDATE question (multipart/form-data) - image optional
+router.put("/:id/questions/:qId", upload.single("image"), admQuizController.updateQuestion);
 
 // DELETE question
 router.delete("/:id/questions/:qId", admQuizController.deleteQuestion);
