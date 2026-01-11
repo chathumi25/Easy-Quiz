@@ -1,6 +1,8 @@
-// backend/routes/AdmSubjectRoutes.js
 const express = require("express");
 const router = express.Router();
+
+const auth = require("../middlewere/auth");
+const { adminOnly } = require("../middlewere/authMiddleware");
 
 const {
   getSubjectsByGrade,
@@ -10,19 +12,14 @@ const {
   removeUnit,
 } = require("../controllers/admSubjectController");
 
-// GET subjects by gradeId
-router.get("/", getSubjectsByGrade);
+// 🔒 ADMIN ONLY
+router.get("/", auth, adminOnly, getSubjectsByGrade);
+router.post("/add", auth, adminOnly, addSubject);
+router.post("/remove", auth, adminOnly, removeSubject);
+router.post("/add-unit", auth, adminOnly, addUnit);
+router.post("/remove-unit", auth, adminOnly, removeUnit);
 
-// ADD subject
-router.post("/add", addSubject);
 
-// REMOVE subject
-router.post("/remove", removeSubject);
 
-// ADD unit
-router.post("/add-unit", addUnit);
-
-// REMOVE unit
-router.post("/remove-unit", removeUnit);
 
 module.exports = router;
