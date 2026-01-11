@@ -126,7 +126,7 @@ const Signup = () => {
 
   return (
     <AuthLayout>
-      <div className="w-full sm:w-[800px] bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl border border-blue-100 p-10 mx-auto flex flex-col transition-all duration-500">
+      <div className="w-full sm:w-[700px] bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl border border-blue-100 p-10 mx-auto flex flex-col transition-all duration-500">
 
         <h2 className="text-3xl font-bold text-center text-indigo-700 mb-6">
           Create Your Account

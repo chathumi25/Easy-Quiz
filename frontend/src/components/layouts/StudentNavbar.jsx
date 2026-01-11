@@ -55,10 +55,10 @@ const StudentNavbar = () => {
 
   const menuItems = [
     { label: "Dashboard", icon: <FaTachometerAlt />, path: "/studentdashboard" },
-    { label: "Progress", icon: <FaChartLine />, path: "/studentprogress" },
+   /* { label: "Progress", icon: <FaChartLine />, path: "/studentprogress" },*/
     { label: "Subjects", icon: <FaBook />, path: "/studentsubject" },
     { label: "Quizzes", icon: <FaQuestionCircle />, path: "/studentquiz" },
-    { label: "Results", icon: <FaClipboardCheck />, path: "/studentgrades" },
+    /*{ label: "Results", icon: <FaClipboardCheck />, path: "/studentgrades" },*/
     { label: "Profile", icon: <FaUserEdit />, path: "/studentprofile" },
   ];
 
@@ -157,7 +157,7 @@ const StudentNavbar = () => {
               <FaChartLine className="text-green-700 text-lg" />
               <div>
                 <p className="text-xs text-green-900 opacity-80">Progress</p>
-                <p className="font-semibold text-sm text-green-900">85%</p>
+                <p className="font-semibold text-sm text-green-900">100%</p>
               </div>
             </div>
 
@@ -165,7 +165,7 @@ const StudentNavbar = () => {
               <FaQuestionCircle className="text-indigo-700 text-lg" />
               <div>
                 <p className="text-xs text-indigo-900 opacity-80">Quizzes</p>
-                <p className="font-semibold text-sm text-indigo-900">24</p>
+                <p className="font-semibold text-sm text-indigo-900">2</p>
               </div>
             </div>
 
@@ -173,7 +173,7 @@ const StudentNavbar = () => {
               <FaMedal className="text-yellow-600 text-lg" />
               <div>
                 <p className="text-xs text-yellow-900 opacity-80">Rank</p>
-                <p className="font-semibold text-sm text-yellow-900">#3</p>
+                <p className="font-semibold text-sm text-yellow-900">#1</p>
               </div>
             </div>
           </div>

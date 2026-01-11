@@ -31,13 +31,11 @@ const AdminNavbar = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Load user image
+  /* ---------------- LOAD PROFILE IMAGE ---------------- */
   useEffect(() => {
     if (!user) return;
-
     let img = user.profileImage;
     if (img?.startsWith("/uploads")) img = BASE_URL + img;
-
     setProfileImage(img || "");
   }, [user]);
 
@@ -46,7 +44,7 @@ const AdminNavbar = () => {
 
   const handleNavigation = (path) => {
     navigate(path);
-    if (isMobile) setIsMenuOpen(false);
+    setIsMenuOpen(false); // ✅ close mobile menu on navigation
   };
 
   const handleLogout = () => {
@@ -55,18 +53,16 @@ const AdminNavbar = () => {
     navigate("/login", { replace: true });
   };
 
-  // ⭐ Backend remove image + context update
+  /* ---------------- REMOVE PROFILE IMAGE ---------------- */
   const confirmRemovePicture = async () => {
     try {
       const res = await axios.delete("/api/adm/profile/remove-image");
-
       if (res.data.success) {
         const updated = { ...user, profileImage: "" };
         localStorage.setItem("user", JSON.stringify(updated));
         setUser(updated);
         setProfileImage("");
       }
-
       setShowConfirmDelete(false);
       setDropdownOpen(false);
     } catch (err) {
@@ -74,6 +70,7 @@ const AdminNavbar = () => {
     }
   };
 
+  /* ---------------- RESPONSIVE + OUTSIDE CLICK ---------------- */
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
     handleResize();
@@ -102,17 +99,17 @@ const AdminNavbar = () => {
 
   return (
     <>
-      {/* NAVBAR */}
+      {/* ================= NAVBAR ================= */}
       <nav className="w-full fixed top-0 left-0 z-50 bg-gradient-to-r from-indigo-200 via-blue-200 to-purple-200 shadow-lg px-6 sm:px-8 py-4 flex justify-between items-center border-b border-indigo-200">
 
         <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-transparent bg-clip-text">
           Easy Quiz
         </h1>
 
-        {/* DESKTOP MENU */}
-        <div className="hidden md:flex items-center gap-6 ml-auto">
+        {/* ================= DESKTOP MENU ================= */}
+        <div className="hidden lg:flex items-center gap-6 ml-auto">
 
-          {/* MAIN MENU BUTTONS */}
+          {/* MAIN MENU */}
           <div className="flex gap-3 items-center">
             {menuItems.map((item, index) => (
               <button
@@ -130,14 +127,13 @@ const AdminNavbar = () => {
             ))}
           </div>
 
-          {/* ⭐⭐ SUMMARY CARDS (ADDED BACK) ⭐⭐ */}
+          {/* SUMMARY CARDS */}
           <div className="flex gap-3 ml-4">
-
             <div className="bg-white/80 px-3 py-2 rounded-xl flex items-center gap-2 shadow">
               <FaUsers className="text-blue-700" />
               <div>
                 <p className="text-xs opacity-60">Users</p>
-                <p className="font-semibold">1,245</p>
+                <p className="font-semibold">5</p>
               </div>
             </div>
 
@@ -145,7 +141,7 @@ const AdminNavbar = () => {
               <FaBook className="text-yellow-700" />
               <div>
                 <p className="text-xs opacity-60">Subjects</p>
-                <p className="font-semibold">18</p>
+                <p className="font-semibold">8</p>
               </div>
             </div>
 
@@ -153,12 +149,10 @@ const AdminNavbar = () => {
               <FaQuestionCircle className="text-pink-700" />
               <div>
                 <p className="text-xs opacity-60">Quizzes</p>
-                <p className="font-semibold">48</p>
+                <p className="font-semibold">3</p>
               </div>
             </div>
-
           </div>
-          {/* END SUMMARY CARDS */}
 
           {/* PROFILE DROPDOWN */}
           <div className="relative ml-4" ref={dropdownRef}>
@@ -176,15 +170,11 @@ const AdminNavbar = () => {
                   {getInitial(user?.name)}
                 </div>
               )}
-
-              <FaChevronDown
-                className={`transition ${dropdownOpen ? "rotate-180" : ""}`}
-              />
+              <FaChevronDown className={`transition ${dropdownOpen ? "rotate-180" : ""}`} />
             </div>
 
             {dropdownOpen && (
               <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl border py-2">
-
                 <button
                   onClick={() => navigate("/adminprofile")}
                   className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 w-full text-left"
@@ -208,24 +198,58 @@ const AdminNavbar = () => {
                   <FaSignOutAlt />
                   Logout
                 </button>
-
               </div>
             )}
           </div>
         </div>
 
-        {/* MOBILE MENU */}
+        {/* ================= MOBILE BUTTON ================= */}
         {isMobile && (
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 text-indigo-800 rounded-full hover:bg-indigo-100"
+            className="p-2 text-indigo-800 rounded-full hover:bg-indigo-100 lg:hidden"
           >
             {isMenuOpen ? <FaTimes size={22} /> : <FaBars size={22} />}
           </button>
         )}
       </nav>
 
-      {/* REMOVE IMAGE CONFIRM MODAL */}
+      {/* ================= MOBILE / TABLET MENU ================= */}
+      {isMobile && (
+        <div
+          className={`fixed top-[88px] left-0 right-0 z-40 lg:hidden
+            transition-all duration-300
+            ${isMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"}
+            backdrop-blur-xl bg-white/90 border-t shadow-xl`}
+        >
+          <div className="flex flex-col gap-3 p-5">
+            {menuItems.map((item, i) => (
+              <button
+                key={i}
+                onClick={() => handleNavigation(item.path)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium ${
+                  location.pathname === item.path
+                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                    : "bg-white text-indigo-800"
+                }`}
+              >
+                {item.icon}
+                {item.label}
+              </button>
+            ))}
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 text-red-600 font-medium"
+            >
+              <FaSignOutAlt />
+              Logout
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ================= REMOVE IMAGE CONFIRM ================= */}
       {showConfirmDelete && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-xl w-[90%] max-w-sm text-center">
@@ -240,7 +264,6 @@ const AdminNavbar = () => {
                 className="px-5 py-2 bg-red-600 text-white rounded-xl">
                 Yes
               </button>
-
               <button
                 onClick={() => setShowConfirmDelete(false)}
                 className="px-5 py-2 bg-gray-200 rounded-xl">

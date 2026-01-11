@@ -7,47 +7,6 @@
 /* =============================
    SOFT UI 3D BLOB BACKGROUND (NO IMAGE)
    ============================= */
-.app-background {
-  position: relative;
-  width: 100%;
-  min-height: 100vh;
-  overflow: hidden;
-  background: linear-gradient(135deg, #eef1ff 0%, #f7eaff 100%);
-}
-
-/* Blobs */
-.app-background::before,
-.app-background::after {
-  content: "";
-  position: absolute;
-  width: 450px;
-  height: 450px;
-  border-radius: 50%;
-  filter: blur(55px);
-  opacity: 0.75;
-  z-index: 0;
-}
-
-/* Left Blob */
-.app-background::before {
-  top: -120px;
-  left: -80px;
-  background: radial-gradient(circle at 30% 30%, #b4c7ff, #d6b3ff, transparent 70%);
-}
-
-
-
-/* Floating Spheres */
-.app-background .sphere {
-  position: absolute;
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #ffffff, #a5b6ff 60%);
-  box-shadow: 0 20px 40px rgba(150, 150, 255, 0.25);
-  opacity: 0.9;
-  filter: blur(0.3px);
-}
 
 /* sphere positions */
 .s1 { top: 12%; left: 18%; }

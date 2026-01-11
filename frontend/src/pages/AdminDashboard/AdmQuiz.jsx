@@ -141,34 +141,53 @@ const AdmQuiz = () => {
   };
 
   const fetchQuizzes = async () => {
-    try {
-      const params = {};
-      if (selectedGrade) params.grade = selectedGrade;
-      if (selectedSubject) params.subject = selectedSubject;
-      if (selectedUnit && selectedUnit !== "All Units") params.unit = selectedUnit;
+  // 🚫 HARD STOP: do not fetch without subject + unit
+  if (!selectedSubject || !selectedUnit) {
+    setQuizzes([]);
+    return;
+  }
 
-      const res = await axiosInstance.get(API_PATHS.ADMIN.QUIZ.BASE, { params });
-      const normalized = (res.data.quizzes || []).map((q) => ({
-        ...q,
-        id: q._id,
-        questions: (q.questions || []).map((qq) => ({ ...qq, id: qq._id })),
-        marksPerQuestion: q.marksPerQuestion || (q.limit ? Number((q.totalMarks / q.limit).toFixed(2)) : 0),
-      }));
-      setQuizzes(normalized);
-    } catch (err) {
-      console.error("FETCH QUIZZES ERROR:", err);
-      setQuizzes([]);
-    }
-  };
+  try {
+    const params = {
+      subject: selectedSubject,
+      unit: selectedUnit,
+    };
+
+    const res = await axiosInstance.get(API_PATHS.ADMIN.QUIZ.BASE, { params });
+
+    const normalized = (res.data.quizzes || []).map((q) => ({
+      ...q,
+      id: q._id,
+      questions: (q.questions || []).map((qq) => ({
+        ...qq,
+        id: qq._id,
+      })),
+      marksPerQuestion:
+        q.limit && q.limit > 0
+          ? Number((q.totalMarks / q.limit).toFixed(2))
+          : 0,
+    }));
+
+    setQuizzes(normalized);
+  } catch (err) {
+    console.error("FETCH QUIZZES ERROR:", err);
+    setQuizzes([]);
+  }
+};
+
 
   useEffect(() => {
     fetchGrades();
-    fetchQuizzes();
+   
   }, []);
 
   useEffect(() => {
+  if (selectedSubject && selectedUnit) {
     fetchQuizzes();
-  }, [selectedGrade, selectedSubject, selectedUnit]);
+  } else {
+    setQuizzes([]);
+  }
+}, [selectedSubject, selectedUnit]);
 
   /* =========================
      Handlers for selects
@@ -836,6 +855,7 @@ const AdmQuiz = () => {
           {/* RIGHT – QUIZ LIST */}
           <div>
             {quizzes.length === 0 ? <p className="text-gray-500">No quizzes found.</p> : quizzes.map((quiz) => (
+
               <div key={quiz.id} className="p-5 rounded-xl mb-6 shadow-sm border border-indigo-200 bg-[linear-gradient(155deg,rgba(255,255,255,0.98),rgba(235,242,255,0.96))]">
                 <div className="flex justify-between items-start mb-3">
                   <div>

@@ -1,83 +1,24 @@
-// StdQuiz.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import StudentNavbar from "../../components/layouts/StudentNavbar";
+import QuestionPalette from "../../components/student/quiz/QuestionPalette";
+import ResultSummary from "../../components/student/quiz/ResultSummary";
+import AnswerReview from "../../components/student/quiz/AnswerReview";
+import ConfirmModal from "../../components/ConfirmationModal";
+import Toast from "../../components/Toast";
+import Leaderboard from "../../components/student/quiz/Leaderboard";
+import axiosInstance from "../../utils/axiosInstance";
+import { API_PATHS } from "../../utils/apiPaths";
+
+
 import "../../index.css";
 import "../../student.css";
-import {
-  FaQuestionCircle,
-  FaPlay,
-  FaCheckCircle,
-  FaClock,
-  FaRedoAlt,
-  FaEye,
-  FaTimes,
-  FaExpand,
-  FaCompress,
-} from "react-icons/fa";
 
-const ADMIN_QUIZ_KEY = "easyquiz_admin_quizzes_v3";
-const ATTEMPT_KEY = "easyquiz_student_quiz_attempts_v1";
-const INPROG_KEY = "easyquiz_student_inprogress_v1"; // saves current in-progress attempt (resume)
 
 function StdQuiz() {
+  /* ---------------- NAVBAR HEIGHT ---------------- */
   const navbarRef = useRef(null);
   const [navbarHeight, setNavbarHeight] = useState(85);
-  const [quizzes, setQuizzes] = useState([]);
-  const [attempts, setAttempts] = useState([]);
-  const [selectedGrade, setSelectedGrade] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("");
-  const [filteredQuizzes, setFilteredQuizzes] = useState([]);
-  const [isAttempting, setIsAttempting] = useState(false);
-  const [selectedQuiz, setSelectedQuiz] = useState(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [showResult, setShowResult] = useState(false);
-  const [scoreDetails, setScoreDetails] = useState(null);
-  const [reviewMode, setReviewMode] = useState(false);
-  const [reviewQuestions, setReviewQuestions] = useState([]);
-  const [remainingSeconds, setRemainingSeconds] = useState(0);
-  const [isFullScreenMode, setIsFullScreenMode] = useState(false);
 
-  // Utility: shuffle in-place (Fisher-Yates)
-  const shuffleArray = (arr) => {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  };
-
-  // Load quizzes (admin)
-  useEffect(() => {
-    const raw = localStorage.getItem(ADMIN_QUIZ_KEY);
-    if (raw) {
-      try {
-        setQuizzes(JSON.parse(raw));
-      } catch {
-        console.warn("Invalid quiz data");
-      }
-    }
-  }, []);
-
-  // Load attempts
-  useEffect(() => {
-    const raw = localStorage.getItem(ATTEMPT_KEY);
-    if (raw) {
-      try {
-        setAttempts(JSON.parse(raw));
-      } catch {
-        console.warn("Invalid attempt data");
-      }
-    }
-  }, []);
-
-  // Persist attempts
-  useEffect(() => {
-    localStorage.setItem(ATTEMPT_KEY, JSON.stringify(attempts));
-  }, [attempts]);
-
-  // Dynamic navbar height
   useEffect(() => {
     const updateHeight = () => {
       if (navbarRef.current) setNavbarHeight(navbarRef.current.offsetHeight);
@@ -87,616 +28,558 @@ function StdQuiz() {
     return () => window.removeEventListener("resize", updateHeight);
   }, []);
 
-  // Filter quizzes by grade & subject
-  useEffect(() => {
-    if (selectedGrade && selectedSubject) {
-      const filtered = quizzes.filter(
-        (q) => q.grade === selectedGrade && q.subject === selectedSubject
-      );
-      setFilteredQuizzes(filtered);
-    } else {
-      setFilteredQuizzes([]);
-    }
-  }, [selectedGrade, selectedSubject, quizzes]);
+  /* ---------------- STEP 1 ---------------- */
+  const [subjects, setSubjects] = useState([]);
+const [selectedSubject, setSelectedSubject] = useState(null);
 
-  // Extract available grades & subjects
-  const uniqueGrades = [...new Set(quizzes.map((q) => q.grade))];
-  const subjectsForGrade = quizzes
-    .filter((q) => q.grade === selectedGrade)
-    .map((q) => q.subject)
-    .filter((v, i, a) => a.indexOf(v) === i);
+  const [quizFilter, setQuizFilter] = useState("all");
 
-  // ----- Resume in-progress attempt if any -----
-  useEffect(() => {
-    const raw = localStorage.getItem(INPROG_KEY);
-    if (raw) {
-      try {
-        const inprog = JSON.parse(raw);
-        // If there is a valid in-progress item and quiz still exists or included in saved object:
-        if (inprog && inprog.quiz && inprog.startedAt) {
-          // restore
-          setSelectedQuiz(inprog.quiz);
-          setIsAttempting(true);
-          setCurrentIndex(inprog.currentIndex ?? 0);
-          setAnswers(inprog.answers ?? {});
-          setRemainingSeconds(inprog.remainingSeconds ?? inprog.quiz.durationSeconds ?? 0);
-          setShowResult(false);
-          setReviewMode(false);
-          // small delay to avoid overlap with navbar height setting
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }
-      } catch {
-        // ignore
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  /* ---------------- STEP 2 ---------------- */
+  const [showQuizInfo, setShowQuizInfo] = useState(false);
+  const [confirmStart, setConfirmStart] = useState(false);
 
-  // Save in-progress attempt to localStorage whenever relevant changes
-  useEffect(() => {
-    if (!isAttempting || !selectedQuiz) {
-      localStorage.removeItem(INPROG_KEY);
-      return;
-    }
-    const payload = {
-      quiz: selectedQuiz,
-      currentIndex,
-      answers,
-      remainingSeconds,
-      startedAt: Date.now(),
-    };
-    localStorage.setItem(INPROG_KEY, JSON.stringify(payload));
-  }, [isAttempting, selectedQuiz, currentIndex, answers, remainingSeconds]);
+  /* ---------------- STEP 3 ---------------- */
+  const [startQuiz, setStartQuiz] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [flags, setFlags] = useState({});
+  const [timeLeft, setTimeLeft] = useState(60 * 30);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [agreeChecked, setAgreeChecked] = useState(false);
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
+  const goPrev = () => {
+  if (currentIndex > 0) setCurrentIndex((i) => i - 1);
+};
 
-  // Prevent leaving while attempting (warning)
-  useEffect(() => {
-    const handleBefore = (e) => {
-      if (isAttempting) {
-        e.preventDefault();
-        e.returnValue = "You have an in-progress quiz. Are you sure you want to leave?";
-        return e.returnValue;
-      }
-    };
-    window.addEventListener("beforeunload", handleBefore);
-    return () => window.removeEventListener("beforeunload", handleBefore);
-  }, [isAttempting]);
+const goNext = () => {
+  if (!demoQuiz || !demoQuiz.questions) return;
+  if (currentIndex < demoQuiz.questions.length - 1) {
+    setCurrentIndex((i) => i + 1);
+  }
+};
 
-  // Timer effect for countdown only when attempting
-  useEffect(() => {
-    if (!isAttempting || remainingSeconds <= 0) return;
-    const interval = setInterval(() => {
-      setRemainingSeconds((s) => {
-        if (s <= 1) {
-          clearInterval(interval);
-          // Auto finish when time is up
-          finishQuiz(true); // auto flag
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAttempting, remainingSeconds]);
 
-  // Format seconds to mm:ss
-  const formatTime = (sec = 0) => {
-    const m = Math.floor(sec / 60)
-      .toString()
-      .padStart(2, "0");
-    const s = (sec % 60).toString().padStart(2, "0");
-    return `${m}:${s}`;
-  };
 
-  // Prepare quiz for attempt: randomize questions & answers, and set timer
-  const prepareQuizForAttempt = (quiz) => {
-    // deep clone to avoid mutating original admin data
-    const qcopy = JSON.parse(JSON.stringify(quiz));
 
-    // randomize question order
-    qcopy.questions = shuffleArray(qcopy.questions || []).map((q) => {
-      // for each question, build options array and shuffle, but we keep label mapping
-      // We'll convert to option object { key: 'a'|'b'..., text, originalKey } to allow shuffled ordering
-      const opts = ["a", "b", "c", "d"].filter((k) => q[k] !== undefined);
-      const optObjs = shuffleArray(
-        opts.map((k) => ({ key: k, text: q[k] }))
-      );
-      // store the shuffled options as field 'shuffledOptions' and keep 'correct' as original key
-      return {
-        ...q,
-        shuffledOptions: optObjs, // array of {key, text}
-      };
-    });
+  /* ---------------- STEP 4 + 5 ---------------- */
+  const [showResult, setShowResult] = useState(false);
+  const [result, setResult] = useState(null);
 
-    // default duration: try quiz.durationMinutes else 10 min
-    const durationSeconds =
-      (typeof qcopy.durationMinutes === "number" ? qcopy.durationMinutes : 10) * 60;
+  /* ---------------- STEP 7 ---------------- */
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [toasts, setToasts] = useState([]);
 
-    // attach durationSeconds for resume
-    qcopy.durationSeconds = durationSeconds;
-
-    return qcopy;
-  };
-
-  // Start quiz (shuffles, sets timer)
-  const startQuiz = (quiz) => {
-    const prepared = prepareQuizForAttempt(quiz);
-    setSelectedQuiz(prepared);
-    setIsAttempting(true);
-    setCurrentIndex(0);
-    setAnswers({});
-    setShowResult(false);
-    setReviewMode(false);
-    setRemainingSeconds(prepared.durationSeconds ?? 600);
-    // save inprogress will be triggered by effect
-    // scroll into view on mobile
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // Retry quiz: we start a fresh attempt of the same quiz (reshuffle)
-  const retryQuiz = (attemptOrQuiz) => {
-    // attemptOrQuiz may be attempt object (from attempts list) or quiz object
-    // find original quiz by quizId if available
-    let original = null;
-    if (attemptOrQuiz && attemptOrQuiz.quizId) {
-      original = quizzes.find((q) => q.id === attemptOrQuiz.quizId);
-    } else if (attemptOrQuiz && attemptOrQuiz.id && attemptOrQuiz.questions) {
-      // already a quiz object
-      original = attemptOrQuiz;
-    }
-    // fallback: use selectedQuiz
-    if (!original) original = selectedQuiz;
-    if (original) startQuiz(original);
-  };
-
-  // Handle selecting an answer (stores using original question id and option key)
-  const handleAnswer = (qid, choiceKey) => {
-    setAnswers((prev) => ({ ...prev, [qid]: choiceKey }));
-    // autosave to localStorage via effect
-  };
-
-  // Next or finish
-  const nextQuestion = () => {
-    if (!selectedQuiz) return;
-    if (currentIndex < selectedQuiz.questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    } else {
-      finishQuiz();
-    }
-  };
-
-  // Finish quiz: calculates score, stores attempt, clears in-progress
-  // autoFlag - true if auto-submitted by timer
-  const finishQuiz = (autoFlag = false) => {
-    if (!selectedQuiz) return;
-    const total = selectedQuiz.questions.length;
-    let correct = 0;
-    const reviewed = selectedQuiz.questions.map((q) => {
-      // selected answers stored in answers keyed by q.id; correct stored as original key in q.correct
-      const selected = answers[q.id];
-      const isCorrect = selected === q.correct;
-      if (isCorrect) correct++;
-      return { ...q, selected, isCorrect };
-    });
-
-    const score = Math.round((correct / total) * 100);
-
-    const attempt = {
-      id: Date.now(),
-      quizId: selectedQuiz.id,
-      title: selectedQuiz.title,
-      grade: selectedQuiz.grade,
-      subject: selectedQuiz.subject,
-      unit: selectedQuiz.unit,
-      score,
-      total,
-      correct,
-      date: new Date().toLocaleString(),
-      timeTakenSeconds:
-        (selectedQuiz.durationSeconds ?? 0) - (remainingSeconds ?? 0),
-      autoSubmitted: !!autoFlag,
-    };
-
-    setAttempts((prev) => [attempt, ...prev.slice(0, 3)]);
-    setScoreDetails(attempt);
-    setReviewQuestions(reviewed);
-    setShowResult(true);
-    setIsAttempting(false);
-    setSelectedQuiz(null);
-    setRemainingSeconds(0);
-    // clear in-progress
-    localStorage.removeItem(INPROG_KEY);
-    // scroll to result
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // Stats calculations
-  const totalQuizzes = quizzes.length;
-  const totalAttempts = attempts.length;
-  const avgScore =
-    totalAttempts > 0
-      ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / totalAttempts)
-      : 0;
-  const recentAttempts = attempts.slice(0, 4);
-
-  // Full-screen mode (CSS-based)
-  const toggleFullScreenMode = () => {
-    setIsFullScreenMode((s) => !s);
-    // attempt true fullscreen if available (optional)
+  /* ---------------- QUIZ LIST ---------------- */
+const [quizList, setQuizList] = useState([]);
+useEffect(() => {
+  const loadQuizzes = async () => {
     try {
-      if (!isFullScreenMode && document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      } else if (document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {});
+      const res = await axiosInstance.get(API_PATHS.STD_QUIZ.LIST);
+      if (res.data.success) {
+        setQuizList(res.data.quizzes);
       }
     } catch {
-      // ignore
+      addToast("Failed to load quizzes", "error");
     }
   };
 
-  // Render answer options - uses shuffledOptions if present (for randomized order)
-  const renderOptions = (q) => {
-    const opts = q.shuffledOptions || ["a", "b", "c", "d"].map((k) => ({ key: k, text: q[k] }));
-    return opts.map((optObj) => {
-      const optKey = optObj.key;
-      const optText = optObj.text;
-      const selectedChoice = answers[q.id];
-      const isSelected = selectedChoice === optKey;
-      return (
-        <div
-          key={optKey}
-          className={`p-3 mb-2 rounded-md cursor-pointer border transition flex items-start gap-3 ${
-            isSelected ? "bg-indigo-100 border-indigo-400" : "bg-white border-gray-200 hover:bg-indigo-50"
-          }`}
-          onClick={() => handleAnswer(q.id, optKey)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") handleAnswer(q.id, optKey);
-          }}
-        >
-          <div className="min-w-[36px] flex items-center justify-center font-semibold text-indigo-700">
-            {optKey.toUpperCase()}.
-          </div>
-          <div className="text-gray-800 break-words">{optText}</div>
-        </div>
-      );
-    });
+  loadQuizzes();
+}, []);
+
+ 
+
+ const filteredQuizzes = (quizList || [])
+  .filter(q => {
+    if (!selectedSubject) return true;
+    return q.subjectId === selectedSubject._id;
+  })
+  .filter(q => {
+    if (quizFilter === "all") return true;
+    return quizFilter === "ranked"
+      ? q.affectsRank === true
+      : q.affectsRank === false;
+  });
+
+
+
+
+  /* ---------------- DEMO QUIZ ---------------- */
+  const [demoQuiz, setDemoQuiz] = useState(null);
+
+
+  useEffect(() => {
+  const loadSubjects = async () => {
+    try {
+      const res = await axiosInstance.get(API_PATHS.STD_QUIZ.SUBJECTS);
+      if (res.data.success && res.data.subjects.length > 0) {
+  setSubjects(res.data.subjects);
+  setSelectedSubject(res.data.subjects[0]);
+}
+
+    } catch {
+      addToast("Failed to load subjects", "error");
+    }
+  };
+  loadSubjects();
+}, []);
+
+console.log("Selected subject:", selectedSubject);
+console.log("SUBJECT ID:", selectedSubject?._id);
+console.log("QUIZ COUNT:", quizList.length);
+
+
+  /* ---------------- TIMER ---------------- */
+  useEffect(() => {
+    if (!startQuiz) return;
+    if (timeLeft <= 0) handleSubmit();
+    const t = setInterval(() => setTimeLeft((s) => s - 1), 1000);
+    return () => clearInterval(t);
+  }, [startQuiz, timeLeft]);
+
+  const currentQuestion =
+  demoQuiz && demoQuiz.questions
+    ? demoQuiz.questions[currentIndex]
+    : null;
+
+  /* ---------------- HELPERS ---------------- */
+  const addToast = (message, type = "info") => {
+    const id = Date.now();
+    setToasts((t) => [...t, { id, message, type }]);
+    setTimeout(() => removeToast(id), 3000);
   };
 
+  const removeToast = (id) => {
+    setToasts((t) => t.filter((x) => x.id !== id));
+  };
+
+  const formatTime = (s) =>
+    `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
+  /* ---------------- SUBMIT ---------------- */
+ const handleSubmit = async () => {
+  try {
+    const payload = {
+  quizId: demoQuiz.id || demoQuiz._id,
+  answers: Object.entries(answers).map(([qid, selected]) => ({
+    questionId: qid,
+    selected,
+  })),
+};
+
+
+    const res = await axiosInstance.post(
+      API_PATHS.STD_QUIZ.SUBMIT,
+      payload
+    );
+
+  if (res.data.success) {
+  setResult({
+    correct: res.data.result.correct,
+    wrong: res.data.result.wrong,
+    skipped: res.data.result.skipped,
+    accuracy: res.data.result.accuracy,
+    correctAnswers: res.data.result.correctAnswers,
+  });
+
+  setShowResult(true);
+  setStartQuiz(false);
+  addToast("Quiz submitted successfully", "success");
+}
+
+
+  } catch {
+    addToast("Failed to submit quiz", "error");
+  }
+};
+
+
+ const getResultUI = () => {
+  if (!result) return {};
+  if (result.accuracy >= 90) return { emoji: "🏆🎉", text: "Outstanding!" };
+  if (result.accuracy >= 75) return { emoji: "😄✨", text: "Great Job!" };
+  if (result.accuracy >= 50) return { emoji: "🙂👍", text: "Good Effort" };
+  return { emoji: "😕", text: "Try Again" };
+};
+
+
+  const ui = getResultUI();
+
+  /* ---------------- RENDER ---------------- */
   return (
-    <div className={`min-h-screen flex flex-col app-background ${isFullScreenMode ? "h-screen overflow-hidden" : ""}`}>
-      {/* Navbar */}
-      <header ref={navbarRef} className="w-full fixed top-0 left-0 z-50">
+    <div className="min-h-screen app-background">
+      <header ref={navbarRef} className="fixed top-0 left-0 w-full z-50">
         <StudentNavbar />
       </header>
 
-      {/* Main */}
-      <main
-        className={`flex-1 p-4 md:p-8 overflow-y-auto transition-all duration-300 ${isFullScreenMode ? "pt-4" : ""}`}
-        style={{ paddingTop: `${navbarHeight + 80}px` }}
-      >
+
+      <main style={{ paddingTop: navbarHeight + 140 }} className="p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold text-indigo-700 mb-6">My Quizzes</h1>
 
-          {/* Dashboard Summary */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div className="student-card p-4 text-center">
-              <h4 className="text-sm text-indigo-600 font-semibold">Available</h4>
-              <p className="text-2xl md:text-3xl font-bold text-indigo-800">{totalQuizzes}</p>
+          {/* STEP 1 */}
+          {!startQuiz && !showResult && (
+            <>
+            <div className="text-center animate-fadeIn">
+              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r 
+              from-indigo-700 to-purple-800 bg-clip-text text-transparent">
+              My Quizzes
+            </h1>
             </div>
-            <div className="student-card p-4 text-center">
-              <h4 className="text-sm text-indigo-600 font-semibold">Attempts</h4>
-              <p className="text-2xl md:text-3xl font-bold text-indigo-800">{totalAttempts}</p>
-            </div>
-            <div className="student-card p-4 text-center">
-              <h4 className="text-sm text-indigo-600 font-semibold">Avg Score</h4>
-              <p className="text-2xl md:text-3xl font-bold text-indigo-800">{avgScore}%</p>
-            </div>
-          </div>
 
-          {/* Recent Attempts */}
-          {recentAttempts.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-indigo-700 mb-3 flex items-center gap-2">
-                <FaClock /> Recent Attempts
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {recentAttempts.map((a) => (
-                  <div key={a.id} className="p-4 bg-white/95 border border-indigo-100 rounded-xl shadow-sm">
-                    <h4 className="font-bold text-indigo-700">{a.title}</h4>
-                    <p className="text-gray-700 text-sm">
-                      {a.subject} — {a.grade}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Score:{" "}
-                      <span
-                        className={`font-bold ${
-                          a.score >= 70 ? "text-green-600" : a.score >= 40 ? "text-yellow-600" : "text-red-600"
-                        }`}
-                      >
-                        {a.score}%
-                      </span>
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2">{a.date}</p>
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        onClick={() => retryQuiz(a)}
-                        className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-md text-sm"
-                      >
-                        <FaRedoAlt className="inline mr-2" />
-                        Retry
-                      </button>
-                      <button
-                        onClick={() => {
-                          // attempt to review if we have local quiz object (not always available)
-                          // here we only open review from stored reviewQuestions if possible
-                          // (not stored in attempt), so try to find matching local attempt saved - skipping for now
-                        }}
-                        className="px-3 py-2 bg-gray-100 text-gray-700 rounded-md text-sm"
-                      >
-                        View
-                      </button>
-                    </div>
+              <div className="flex gap-3 mb-6">
+                {subjects.map((s) => (
+                  <div
+                    key={s._id}
+                   onClick={() => {
+  setSelectedSubject(s);
+  setQuizList([]); // reset old quizzes
+}}
+
+                   className={`subject-card cursor-pointer ${
+  selectedSubject && selectedSubject._id === s._id ? "selected-grade" : ""
+}`}
+
+                  >
+                    <h3>{s.name}</h3>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
 
-          {/* Grade & Subject Selectors */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6 items-start">
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <label className="font-semibold text-indigo-700 min-w-[100px]">Select Grade:</label>
-              <select
-                value={selectedGrade}
-                onChange={(e) => {
-                  setSelectedGrade(e.target.value);
-                  setSelectedSubject("");
-                }}
-                className="p-2 border border-indigo-200 rounded-md bg-white w-full md:w-auto"
-              >
-                <option value="">-- Select Grade --</option>
-                {uniqueGrades.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
+              <div className="flex gap-3 mb-6">
+                {["all", "ranked", "practice"].map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setQuizFilter(f)}
+                    className={`px-4 py-2 rounded-lg font-semibold ${
+                      quizFilter === f
+                        ? "bg-indigo-600 text-white"
+                        : "bg-white shadow"
+                    }`}
+                  >
+                    {f === "all"
+                      ? "All Quizzes"
+                      : f === "ranked"
+                      ? "Ranked Quizzes"
+                      : "Practice Quizzes"}
+                  </button>
                 ))}
-              </select>
-            </div>
-
-            {selectedGrade && (
-              <div className="flex items-center gap-3 w-full md:w-auto">
-                <label className="font-semibold text-indigo-700 min-w-[110px]">Select Subject:</label>
-                <select
-                  value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="p-2 border border-indigo-200 rounded-md bg-white w-full md:w-auto"
-                >
-                  <option value="">-- Select Subject --</option>
-                  {subjectsForGrade.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
               </div>
-            )}
-          </div>
 
-          {/* Filtered Quizzes */}
-          {!isAttempting && !showResult && !reviewMode && selectedGrade && selectedSubject && (
-            <>
-              <h2 className="text-2xl font-semibold text-indigo-700 mb-4 flex items-center gap-2">
-                <FaQuestionCircle /> Available Quizzes
-              </h2>
+              {filteredQuizzes.length === 0 && (
+  <p className="text-center text-gray-500 mt-6">
+    No quizzes available for this subject.
+  </p>
+)}
 
-              {filteredQuizzes.length === 0 ? (
-                <p className="text-gray-500">No quizzes found for this Grade and Subject.</p>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {filteredQuizzes.map((quiz) => (
-                    <div
-                      key={quiz.id}
-                      className="p-4 md:p-6 bg-white/90 border border-indigo-100 rounded-xl shadow-md hover:shadow-lg transition"
-                    >
-                      <h3 className="text-xl font-bold text-indigo-800 mb-1">{quiz.title}</h3>
-                      <p className="text-gray-600 text-sm mb-2">
-                        {quiz.grade} → {quiz.subject} → {quiz.unit}
-                      </p>
-                      <p className="text-gray-700 text-sm mb-4">{quiz.description}</p>
-                      <div className="flex gap-3 items-center">
-                        <button
-                          onClick={() => startQuiz(quiz)}
-                          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center gap-2"
-                        >
-                          <FaPlay /> Start Quiz
-                        </button>
-                        <div className="text-sm text-gray-500">Duration: {quiz.durationMinutes ?? 10} min</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredQuizzes.map((quiz) => (
+                  <div key={quiz.id} className="panel">
+  {/* ✅ QUIZ TITLE */}
+  <h3 className="font-bold text-lg">
+    {quiz.title || "Untitled Quiz"}
+  </h3>
+
+  {/* ✅ SUBJECT */}
+  <p className="text-sm text-gray-500">
+    Subject: {quiz.subject || "General"}
+  </p>
+
+  {/* ✅ TYPE */}
+  <p className="text-xs text-gray-400 capitalize">
+    {quiz.affectsRank ? "Ranked Quiz" : "Practice Quiz"}
+  </p>
+
+  <button
+    className="btn-gradient mt-4"
+    onClick={async () => {
+      try {
+        const res = await axiosInstance.get(
+          API_PATHS.STD_QUIZ.GET_ONE(quiz.id)
+        );
+        if (res.data.success) {
+          setDemoQuiz(res.data.quiz);
+          setSelectedQuiz(quiz);
+          setConfirmStart(true);
+        }
+      } catch {
+        addToast("Failed to load quiz", "error");
+      }
+    }}
+  >
+    Start Quiz
+  </button>
+</div>
+
+                ))}
+              </div>
             </>
           )}
 
-          {/* Attempt Mode */}
-          {isAttempting && selectedQuiz && (
-            <div
-              className={`bg-white/95 p-4 md:p-8 rounded-2xl border border-indigo-100 shadow-xl mt-6 ${
-                isFullScreenMode ? "fixed inset-0 z-50 overflow-y-auto" : ""
-              }`}
-            >
-              <div className="flex justify-between items-start gap-3 mb-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-indigo-800 mb-1">{selectedQuiz.title}</h2>
-                  <p className="text-gray-600 mb-1">
-                    {selectedQuiz.grade} → {selectedQuiz.subject} → {selectedQuiz.unit}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Question {currentIndex + 1} of {selectedQuiz.questions.length}
-                  </p>
-                </div>
+          {/* STEP 2 */}
+          {showQuizInfo && (
+            <ConfirmModal
+              open
+              title="Quiz Info"
+              message="Ready to start the quiz?"
+              onCancel={() => setShowQuizInfo(false)}
+              onConfirm={() => {
+                setShowQuizInfo(false);
+                setConfirmStart(true);
+              }}
+            />
+          )}
 
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="text-xs text-gray-500">Time Left</div>
-                    <div className="text-lg font-bold text-indigo-700 flex items-center gap-2">
-                      <FaClock />
-                      <span>{formatTime(remainingSeconds)}</span>
-                    </div>
-                  </div>
+          {confirmStart && (
+            <ConfirmModal
+              open
+              title="Confirm Start"
+              message="Timer will start immediately."
+              onCancel={() => setConfirmStart(false)}
+              onConfirm={() => {
+                setConfirmStart(false);
+                setStartQuiz(true);
+              }}
+            />
+          )}
 
-                  <button
-                    onClick={toggleFullScreenMode}
-                    className="p-2 bg-indigo-50 text-indigo-700 rounded-md"
-                    title="Toggle fullscreen"
-                  >
-                    {isFullScreenMode ? <FaCompress /> : <FaExpand />}
-                  </button>
-                </div>
+          {confirmStart && selectedQuiz && (
+  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+    <div className="panel max-w-md w-full animate-fadeInExpand">
+
+      <h3 className="text-lg font-bold text-purple-700 mb-2">
+        Confirm Start
+      </h3>
+
+      <p className="text-sm text-gray-600 mb-3">
+        The timer will start immediately after confirmation.
+        You cannot pause the quiz once started.
+      </p>
+
+      {/* ⚠ RANKED WARNING */}
+      {selectedQuiz.type === "ranked" && (
+        <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-300">
+          <p className="text-sm text-red-700 font-semibold">
+            ⚠ Ranked Quiz Warning
+          </p>
+          <ul className="text-xs text-red-600 mt-1 list-disc list-inside">
+            <li>You can attempt this quiz only once</li>
+            <li>Your score will affect the leaderboard</li>
+            <li>You cannot reattempt after submission</li>
+          </ul>
+        </div>
+      )}
+
+      {/* ✅ CHECKBOX */}
+      <label className="flex items-center gap-2 mb-6 text-sm">
+        <input
+          type="checkbox"
+          checked={agreeChecked}
+          onChange={(e) => setAgreeChecked(e.target.checked)}
+        />
+        I understand and want to start the quiz
+      </label>
+
+      <div className="flex justify-end gap-4">
+        <button
+          className="bg-white shadow-soft px-4 py-2 rounded-lg"
+          onClick={() => {
+            setConfirmStart(false);
+            setAgreeChecked(false);
+            setSelectedQuiz(null);
+          }}
+        >
+          Cancel
+        </button>
+
+        <button
+          disabled={!agreeChecked}
+          className={`px-4 py-2 rounded-lg text-white ${
+            agreeChecked
+              ? "bg-gradient-to-r from-purple-600 via-pink-500 to-yellow-400"
+              : "bg-gray-400 cursor-not-allowed"
+          }`}
+          onClick={() => {
+            setConfirmStart(false);
+            setAgreeChecked(false);
+            setStartQuiz(true);
+          }}
+        >
+          Confirm & Start
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
+
+
+          {/* STEP 3 */}
+          {startQuiz && demoQuiz && (
+
+            <div className="panel">
+              <div className="flex justify-between mb-4">
+                <h2 className="font-bold">{demoQuiz.title}</h2>
+                <span className="text-red-600">⏱ {formatTime(timeLeft)}</span>
               </div>
 
-              {/* question container */}
-              {selectedQuiz.questions.length === 0 ? (
-                <p className="text-gray-500">No questions available.</p>
-              ) : (
-                <>
-                  <div className="mb-4">
-                    {/* Question text */}
-                    <p className="text-gray-800 text-base md:text-lg mb-3 break-words">
-                      {selectedQuiz.questions[currentIndex].text}
-                    </p>
+              <p className="mb-4">{currentQuestion.text}</p>
 
-                    {/* question image (if present) */}
-                    {selectedQuiz.questions[currentIndex].image && (
-                      <div className="mb-3">
-                        <img
-                          src={selectedQuiz.questions[currentIndex].image}
-                          alt="question"
-                          className="max-w-full h-auto rounded-md border"
-                        />
-                      </div>
-                    )}
+              
 
-                    {/* options */}
-                    <div>{renderOptions(selectedQuiz.questions[currentIndex])}</div>
-                  </div>
+              {["a", "b", "c", "d"].map((key, i) => (
+  <button
+    key={key}
+    onClick={() =>
+      setAnswers({
+        ...answers,
+        [currentQuestion.id]: key,
+      })
+    }
+    className={`block w-full p-3 mt-2 border rounded-lg ${
+      answers[currentQuestion.id] === key
+        ? "bg-indigo-50 border-indigo-500"
+        : ""
+    }`}
+  >
+    {String.fromCharCode(65 + i)}. {currentQuestion[key]}
+  </button>
+))}
 
-                  <div className="flex flex-col md:flex-row justify-between items-center gap-3 mt-4">
-                    <div className="text-sm text-gray-600">
-                      Selected:{" "}
-                      <strong className="text-indigo-700">
-                        {answers[selectedQuiz.questions[currentIndex].id]
-                          ? answers[selectedQuiz.questions[currentIndex].id].toUpperCase()
-                          : "—"}
-                      </strong>
-                    </div>
+{/* PREVIOUS / NEXT NAVIGATION */}
+<div className="flex justify-between items-center mt-6">
 
-                    <div className="flex gap-3 w-full md:w-auto">
-                      <button
-                        onClick={() => {
-                          // go prev
-                          if (currentIndex > 0) setCurrentIndex((p) => p - 1);
-                        }}
-                        disabled={currentIndex === 0}
-                        className="flex-1 md:flex-none px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-60"
-                      >
-                        Previous
-                      </button>
+  {/* PREVIOUS */}
+  <button
+    disabled={currentIndex === 0}
+    onClick={() => setCurrentIndex((i) => i - 1)}
+    className={`px-6 py-2 rounded-lg font-semibold transition ${
+      currentIndex === 0
+        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+        : "bg-white shadow-soft hover:bg-gray-50"
+    }`}
+  >
+    ⬅ Previous
+  </button>
 
-                      <button
-                        onClick={nextQuestion}
-                        className="flex-1 md:flex-none px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md hover:scale-105 transition"
-                      >
-                        {currentIndex < selectedQuiz.questions.length - 1 ? "Next" : "Finish Quiz"}
-                      </button>
-                    </div>
-                  </div>
-                </>
+  {/* NEXT */}
+  <button
+    disabled={currentIndex === demoQuiz.questions.length - 1}
+    onClick={() => setCurrentIndex((i) => i + 1)}
+    className={`px-6 py-2 rounded-lg font-semibold transition ${
+      currentIndex === demoQuiz.questions.length - 1
+        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+        : "bg-indigo-600 text-white hover:bg-indigo-700"
+    }`}
+  >
+    Next ➡
+  </button>
+
+</div>
+
+              {/* 🔴 RED FLAG */}
+              <button
+                className={`mt-4 px-4 py-2 rounded-lg font-semibold ${
+                  flags[currentQuestion.id]
+                    ? "bg-red-600 text-white"
+                    : "bg-gray-200 text-gray-700"
+                }`}
+                onClick={() =>
+                  setFlags((prev) => ({
+                    ...prev,
+                    [currentQuestion.id]: !prev[currentQuestion.id],
+                  }))
+                }
+              >
+                🚩 {flags[currentQuestion.id] ? "Unmark Review" : "Mark for Review"}
+              </button>
+
+              <QuestionPalette
+                questions={demoQuiz.questions}
+                currentIndex={currentIndex}
+                answers={answers}
+                flags={flags}
+                onJump={setCurrentIndex}
+              />
+
+              
+
+              <div className="text-right mt-6">
+                <button
+                  className="bg-red-600 text-white px-6 py-2 rounded-lg"
+                  onClick={() => setShowSubmitConfirm(true)}
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* SUBMIT CONFIRM */}
+          <ConfirmModal
+            open={showSubmitConfirm}
+            title="Submit Quiz"
+            message="Are you sure?"
+            onCancel={() => setShowSubmitConfirm(false)}
+            onConfirm={handleSubmit}
+          />
+
+          {/* RESULT */}
+          {showResult && result && (
+            <div className="panel text-center">
+              <div className="text-6xl">{ui.emoji}</div>
+              <h2 className="text-3xl font-bold">{ui.text}</h2>
+
+              <ResultSummary
+                questions={demoQuiz.questions}
+                answers={answers}
+                result={result}
+              />
+
+             <AnswerReview
+  questions={demoQuiz.questions}
+  answers={answers}
+  result={result}
+/>
+
+
+
+              {demoQuiz.affectsRank && (
+                <button
+                  className="btn-gradient mt-4"
+                  onClick={() => setShowLeaderboard(true)}
+                >
+                  View Leaderboard
+                </button>
               )}
+
+              
+
+              <button
+                className="mt-6 bg-white shadow-soft px-6 py-2 rounded-lg"
+                onClick={() => {
+                  setShowResult(false);
+                  setStartQuiz(false);
+                  setAnswers({});
+                  setFlags({});
+                  setCurrentIndex(0);
+                  setTimeLeft(60 * 30);
+                }}
+              >
+                Back to Quiz Board
+              </button>
             </div>
           )}
 
-          {/* Show Result */}
-          {showResult && scoreDetails && !reviewMode && (
-            <div className="bg-white/95 p-6 md:p-8 rounded-2xl border border-indigo-100 shadow-xl text-center mt-6">
-              <h2 className="text-2xl font-bold text-indigo-700 mb-3">Quiz Completed!</h2>
-              <p className="text-gray-700 mb-2">{scoreDetails.title}</p>
-              <p className="text-3xl font-extrabold text-indigo-800 mb-3">{scoreDetails.score}%</p>
-              <p className="text-gray-600 mb-4">
-                You got <strong className="text-indigo-700">{scoreDetails.correct}</strong> out of {scoreDetails.total} correct.
-              </p>
-
-              <div className="flex flex-col md:flex-row justify-center gap-3">
-                <button
-                  onClick={() => retryQuiz(scoreDetails)}
-                  className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:scale-105 transition flex items-center gap-2"
-                >
-                  <FaRedoAlt /> Retry Quiz
-                </button>
-                <button
-                  onClick={() => setReviewMode(true)}
-                  className="px-6 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition flex items-center gap-2"
-                >
-                  <FaEye /> Review Answers
-                </button>
-                <button
-                  onClick={() => setShowResult(false)}
-                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
+          {/* LEADERBOARD (ONLY ONCE) */}
+          {showLeaderboard && (
+            <Leaderboard
+             quizId={demoQuiz._id || demoQuiz.id}
+              onClose={() => setShowLeaderboard(false)}
+            />
           )}
 
-          {/* Review Answers */}
-          {reviewMode && (
-            <div className="bg-white/95 p-4 md:p-8 rounded-2xl border border-indigo-100 shadow-xl mt-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-indigo-700">Review Answers — {scoreDetails?.title}</h2>
-                <button onClick={() => setReviewMode(false)} className="p-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition">
-                  <FaTimes />
-                </button>
-              </div>
-
-              {reviewQuestions.map((q, idx) => (
-                <div key={q.id} className="mb-4 p-4 border border-indigo-100 rounded-xl bg-white shadow-sm">
-                  <h3 className="text-lg font-semibold text-indigo-800 mb-2">
-                    Q{idx + 1}. {q.text}
-                  </h3>
-
-                  {q.image && (
-                    <div className="mb-2">
-                      <img src={q.image} alt={`q${idx + 1}`} className="max-w-full h-auto rounded" />
-                    </div>
-                  )}
-
-                  <ul className="space-y-2">
-                    {(q.shuffledOptions || ["a", "b", "c", "d"].map((k) => ({ key: k, text: q[k] }))).map((opt) => {
-                      const optKey = opt.key;
-                      const isCorrect = q.correct === optKey;
-                      const isSelected = q.selected === optKey;
-                      return (
-                        <li
-                          key={optKey}
-                          className={`p-2 rounded-md border ${
-                            isCorrect ? "bg-green-50 border-green-300" : isSelected ? "bg-red-50 border-red-300" : "bg-white border-gray-200"
-                          }`}
-                        >
-                          <strong>{optKey.toUpperCase()}.</strong> {opt.text}
-                          {isCorrect && <FaCheckCircle className="inline ml-2 text-green-600" />}
-                          {isSelected && !isCorrect && <span className="ml-2 text-red-500 font-semibold">(Your Answer)</span>}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
+          <Toast toasts={toasts} onRemove={removeToast} />
         </div>
       </main>
     </div>

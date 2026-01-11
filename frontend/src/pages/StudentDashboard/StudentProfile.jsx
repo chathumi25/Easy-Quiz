@@ -180,7 +180,7 @@ const StudentProfile = () => {
           <div className="text-center animate-fadeIn">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r 
               from-indigo-700 to-purple-800 bg-clip-text text-transparent">
-              Student Profile Settings
+               Profile Settings
             </h1>
             <p className="text-gray-600 mt-2">
               Manage your personal information and security settings.

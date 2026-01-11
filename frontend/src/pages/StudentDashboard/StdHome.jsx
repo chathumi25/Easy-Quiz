@@ -1,107 +1,186 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import StudentNavbar from "../../components/layouts/StudentNavbar";
 import "../../index.css";
+import "../../student.css";
 
 function StdHome() {
   const navbarRef = useRef(null);
-  const [navbarHeight, setNavbarHeight] = useState(85);
   const navigate = useNavigate();
+  const [navbarHeight, setNavbarHeight] = useState(85);
+  const [openInfo, setOpenInfo] = useState(null); // quiz | subject | profile
 
-  // Detect and update navbar height dynamically
   useEffect(() => {
-    const updateNavbarHeight = () => {
-      if (navbarRef.current) setNavbarHeight(navbarRef.current.offsetHeight);
-    };
-    updateNavbarHeight();
-    window.addEventListener("resize", updateNavbarHeight);
-    return () => window.removeEventListener("resize", updateNavbarHeight);
+    if (navbarRef.current) {
+      setNavbarHeight(navbarRef.current.offsetHeight);
+    }
   }, []);
 
-  // Navigate to quiz page
-  const handleStartQuiz = () => {
-    navigate("/studentquiz"); // matches the App.jsx route
+  const toggleInfo = (key) => {
+    setOpenInfo((prev) => (prev === key ? null : key));
   };
 
   return (
     <div className="min-h-screen flex flex-col app-background">
-      {/* Navbar fixed at top */}
-      <header ref={navbarRef} className="w-full fixed top-0 left-0 z-50">
+      {/* NAVBAR */}
+      <header ref={navbarRef} className="fixed top-0 left-0 w-full z-50">
         <StudentNavbar />
       </header>
 
-      {/* Main Dashboard Content */}
+      {/* MAIN */}
       <main
-        className="flex-1 p-8 overflow-y-auto transition-all duration-500"
-        style={{
-          paddingTop: `${navbarHeight + 130}px`,
-        }}
+        className="flex-1 flex justify-center px-6"
+        style={{ paddingTop: navbarHeight + 120 }}
       >
-        <h1 className="text-3xl font-bold text-indigo-700 mb-6">
-          Student Dashboard
-        </h1>
+        {/* DASHBOARD CARD */}
+        <div
+  className="max-w-4xl w-full min-h-[70vh]
+             bg-gradient-to-br
+             from-indigo-200/80
+             via-purple-200/70
+             to-slate-200/80
+             backdrop-blur-md
+             p-12 rounded-2xl
+             shadow-[0_30px_70px_rgba(0,0,0,0.6)]
+             border border-indigo-200
+             text-white
+             flex flex-col justify-between"
+>
 
-        {/* Dashboard Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white/80 backdrop-blur-sm shadow-md rounded-xl p-6 border border-indigo-100 hover:shadow-lg transition">
-            <h2 className="text-lg font-semibold text-indigo-600 mb-2">
-              Quizzes Attempted
-            </h2>
-            <p className="text-3xl font-bold text-indigo-800">24</p>
-          </div>
 
-          <div className="bg-white/80 backdrop-blur-sm shadow-md rounded-xl p-6 border border-indigo-100 hover:shadow-lg transition">
-            <h2 className="text-lg font-semibold text-indigo-600 mb-2">
-              Average Score
-            </h2>
-            <p className="text-3xl font-bold text-indigo-800">86%</p>
-          </div>
 
-          <div className="bg-white/80 backdrop-blur-sm shadow-md rounded-xl p-6 border border-indigo-100 hover:shadow-lg transition">
-            <h2 className="text-lg font-semibold text-indigo-600 mb-2">
-              Current Rank
-            </h2>
-            <p className="text-3xl font-bold text-indigo-800">#3</p>
-          </div>
-        </div>
+          {/* TITLE */}
+          <div>
+            <h1 className="text-4xl font-extrabold text-center mb-4
+                           bg-gradient-to-r from-indigo-700 to-purple-800
+                           bg-clip-text text-transparent">
+              Student Dashboard
+            </h1>
 
-        {/* ✅ Start Quiz Button */}
-        <div className="flex justify-start mb-6">
-          <button
-            onClick={handleStartQuiz}
-            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md flex items-center gap-2 hover:scale-105 transition"
-          >
-            Start Quiz
-          </button>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="mt-6">
-          <h2 className="text-xl font-semibold text-indigo-700 mb-4">
-            Recent Quizzes
-          </h2>
-          <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-md border border-indigo-100">
-            <ul className="space-y-3 text-gray-700">
-              <li>✅ Science — Scored 92%</li>
-              <li>✅ Mathematics — Scored 87%</li>
-              <li>✅ ICT — Scored 94%</li>
-              <li>⚡ English — In progress...</li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Progress Section */}
-        <div className="mt-10">
-          <h2 className="text-xl font-semibold text-indigo-700 mb-4">
-            Performance Overview
-          </h2>
-          <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-md border border-indigo-100">
-            <p className="text-gray-600">
-              Track your improvement over time and identify subjects where you
-              can perform better. More analytics will appear here soon.
+            <p className="text-center text-gray-600 mb-10 text-lg">
+              Access your learning materials, quizzes, and profile from here.
             </p>
+
+            {/* MAIN ACTION BUTTONS */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+             {/* Subjects */}
+<button
+  onClick={() => navigate("/studentsubject")}
+  className="py-8 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500
+             text-white font-semibold text-lg shadow-md
+             hover:scale-105 transition"
+>
+  📚 Subjects
+  <p className="text-sm mt-1 opacity-90">
+    Units & learning content
+  </p>
+</button>
+
+{/* Quizzes */}
+<button
+  onClick={() => navigate("/studentquiz")}
+  className="py-8 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500
+             text-white font-semibold text-lg shadow-md
+             hover:scale-105 transition"
+>
+  📝 Quizzes
+  <p className="text-sm mt-1 opacity-90">
+    Attempt & review quizzes
+  </p>
+</button>
+
+{/* Profile */}
+<button
+  onClick={() => navigate("/studentprofile")}
+  className="py-8 rounded-xl bg-gradient-to-r from-gray-700 to-gray-600
+             text-white font-semibold text-lg shadow-md
+             hover:scale-105 transition"
+>
+  👤 Profile
+  <p className="text-sm mt-1 opacity-90">
+    Account & security
+  </p>
+</button>
+
+            </div>
           </div>
+
+          {/* INFO SECTIONS */}
+          <div className="space-y-5">
+
+            {/* QUIZ INFO */}
+            <div>
+              <button
+                onClick={() => toggleInfo("quiz")}
+                className="w-full text-left font-semibold text-indigo-700"
+              >
+                📝 How quizzes work {openInfo === "quiz" ? "▲" : "▼"}
+              </button>
+
+              {openInfo === "quiz" && (
+                <div className="mt-3 text-sm text-gray-700 bg-indigo-100 p-4 rounded-lg">
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Confirmation is required before starting</li>
+                    <li>Timer starts immediately after confirmation</li>
+                    <li>You can move between questions</li>
+                    <li>🚩 Red flag questions for review</li>
+                    <li>Skipped questions are counted separately</li>
+                    <li>Results & correct answers shown after submission</li>
+                    <li>Ranked quizzes affect leaderboard</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* SUBJECT INFO */}
+            <div>
+              <button
+                onClick={() => toggleInfo("subject")}
+                className="w-full text-left font-semibold text-indigo-700"
+              >
+                📚 Subject page information {openInfo === "subject" ? "▲" : "▼"}
+              </button>
+
+              {openInfo === "subject" && (
+                <div className="mt-3 text-sm text-gray-700 bg-indigo-100 p-4 rounded-lg">
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Subjects are assigned based on your grade</li>
+                    <li>Each subject contains multiple units</li>
+                    <li>You can mark units as completed</li>
+                    <li>Quizzes appear only if available for that unit</li>
+                    <li>Progress is saved automatically</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* PROFILE INFO */}
+            <div>
+              <button
+                onClick={() => toggleInfo("profile")}
+                className="w-full text-left font-semibold text-indigo-700"
+              >
+                👤 Profile & student responsibilities {openInfo === "profile" ? "▲" : "▼"}
+              </button>
+
+              {openInfo === "profile" && (
+                <div className="mt-3 text-sm text-gray-700 bg-indigo-100 p-4 rounded-lg">
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>You can update your personal information</li>
+                    <li>You can change your password</li>
+                    <li>You cannot edit grades or quizzes</li>
+                    <li>You cannot access admin features</li>
+                    <li>Your activity is tracked for learning progress</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* FOOTER */}
+          <p className="text-center text-sm text-gray-500 mt-8">
+            Use the sections above to understand how each feature works.
+          </p>
         </div>
       </main>
     </div>

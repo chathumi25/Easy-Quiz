@@ -23,47 +23,69 @@ export const API_PATHS = {
     GRADES: "/api/std/grades",
     PROGRESS: "/api/std/progress",
 
-    // ⭐ UPDATED FOR REAL BACKEND
-    SUBJECTS: "/api/std/subjects",                 // GET list of subjects for student's grade
-    GET_SUBJECT: (id) => `/api/std/subjects/${id}`, // GET single subject + units
-
-    QUIZ: "/api/std/quiz",
+    // ✅ SUBJECT PAGE (UNCHANGED)
+    SUBJECTS: "/api/std/subjects",
+    GET_SUBJECT: (id) => `/api/std/subjects/${id}`,
   },
 
   // =====================================================
-  // ADMIN ROUTES
+  // ✅ STUDENT QUIZ ROUTES (MATCH BACKEND)
+  // =====================================================
+  STD_QUIZ: {
+    // 🔥 SUBJECTS FOR QUIZ PAGE
+    SUBJECTS: "/api/std/quiz/subjects",
+
+    // 🔥 QUIZ LIST
+    LIST: "/api/std/quiz",
+
+    // 🔥 SINGLE QUIZ
+    GET_ONE: (id) => `/api/std/quiz/${id}`,
+
+    // 🔥 SAVE PROGRESS
+    SAVE_PROGRESS: "/api/std/quiz/progress",
+
+    // 🔥 SUBMIT QUIZ
+    SUBMIT: "/api/std/quiz/submit",
+
+    // 🔥 ATTEMPTS
+    ATTEMPTS: "/api/std/quiz/attempts/list",
+
+    // 🔥 LEADERBOARD
+    LEADERBOARD: (quizId) =>
+      `/api/std/quiz/${quizId}/leaderboard`,
+  },
+
+  // =====================================================
+  // ADMIN ROUTES (NO CHANGE)
   // =====================================================
   ADMIN: {
-    // DASHBOARD
     DASHBOARD: "/api/adm/dashboard",
+    GET_SUBJECTS: "/api/adm/subjects",
 
-    // GRADES
+
     GRADES: "/api/adm/grades",
     ADD_GRADE: "/api/adm/grades/add",
     REMOVE_GRADE: "/api/adm/grades/remove",
     ADD_STUDENT: "/api/adm/grades/add-student",
     REMOVE_STUDENT: "/api/adm/grades/remove-student",
 
-    // SUBJECTS
-    GET_SUBJECTS: "/api/adm/subjects",
+    SUBJECTS: "/api/adm/subjects",
     ADD_SUBJECT: "/api/adm/subjects/add",
     REMOVE_SUBJECT: "/api/adm/subjects/remove",
     ADD_UNIT: "/api/adm/subjects/add-unit",
     REMOVE_UNIT: "/api/adm/subjects/remove-unit",
 
-    // ===========================
-    // QUIZ ROUTES (ADMIN)
-    // ===========================
     QUIZ: {
       BASE: "/api/adm/quiz",
       CREATE: "/api/adm/quiz",
       GET_ONE: (id) => `/api/adm/quiz/${id}`,
       UPDATE: (id) => `/api/adm/quiz/${id}`,
       DELETE: (id) => `/api/adm/quiz/${id}`,
-
       ADD_QUESTION: (id) => `/api/adm/quiz/${id}/questions`,
-      UPDATE_QUESTION: (id, qId) => `/api/adm/quiz/${id}/questions/${qId}`,
-      DELETE_QUESTION: (id, qId) => `/api/adm/quiz/${id}/questions/${qId}`,
+      UPDATE_QUESTION: (id, qId) =>
+        `/api/adm/quiz/${id}/questions/${qId}`,
+      DELETE_QUESTION: (id, qId) =>
+        `/api/adm/quiz/${id}/questions/${qId}`,
     },
 
     PROFILE: "/api/adm/profile",
@@ -74,9 +96,6 @@ export const API_PATHS = {
     DELETE_ACCOUNT: "/api/adm/profile/delete-account",
   },
 
-  // =====================================================
-  // MISC IMAGE UPLOAD (AUTH)
-  // =====================================================
   IMAGE: {
     UPLOAD_IMAGE: "/api/auth/upload-image",
   },
