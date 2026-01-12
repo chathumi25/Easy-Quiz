@@ -55,7 +55,7 @@ const StudentNavbar = () => {
 
   const menuItems = [
     { label: "Dashboard", icon: <FaTachometerAlt />, path: "/studentdashboard" },
-   /* { label: "Progress", icon: <FaChartLine />, path: "/studentprogress" },*/
+    { label: "Progress", icon: <FaChartLine />, path: "/studentprogress" },
     { label: "Subjects", icon: <FaBook />, path: "/studentsubject" },
     { label: "Quizzes", icon: <FaQuestionCircle />, path: "/studentquiz" },
     /*{ label: "Results", icon: <FaClipboardCheck />, path: "/studentgrades" },*/
